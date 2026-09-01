@@ -1,4 +1,5 @@
 import { and, eq, inArray } from "drizzle-orm";
+import Link from "next/link";
 import { db } from "@/db";
 import { habitEntries, habits } from "@/db/schema";
 import { getCurrentUser } from "@/lib/auth/current-user";
@@ -60,11 +61,20 @@ export default async function Home() {
           <h1 className="text-2xl font-semibold tracking-tight">HAppbitos</h1>
           <p className="text-muted-foreground text-sm">Hola, {user.username}.</p>
         </div>
-        <form action={logout}>
-          <Button type="submit" variant="outline" size="sm">
-            Salir
+        <div className="flex gap-2">
+          <Button
+            variant="secondary"
+            size="sm"
+            render={<Link href="/friend" />}
+          >
+            Progreso del otro
           </Button>
-        </form>
+          <form action={logout}>
+            <Button type="submit" variant="outline" size="sm">
+              Salir
+            </Button>
+          </form>
+        </div>
       </div>
 
       <HabitList
