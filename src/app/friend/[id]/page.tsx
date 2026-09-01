@@ -6,6 +6,7 @@ import { annotations, habitEntries, habits, reactions } from "@/db/schema";
 import { getCurrentUser } from "@/lib/auth/current-user";
 import { getOtherUser } from "@/lib/auth/other-user";
 import { getHabitStreak } from "@/lib/habits/get-habit-streak";
+import { getStreakFlavor } from "@/lib/habits/streak-flavor";
 import { Badge } from "@/components/ui/badge";
 import { HabitHeatmap } from "@/components/habits/habit-heatmap";
 import { ReactionPicker } from "@/components/reactions/reaction-picker";
@@ -73,7 +74,10 @@ export default async function FriendHabitDetailPage({
             {habit.name} <span className="text-muted-foreground text-sm">({friend.username})</span>
           </h1>
           <div className="flex gap-2">
-            <Badge>Racha: {streak.currentStreak} sem.</Badge>
+            <Badge>
+              {getStreakFlavor(streak.currentStreak)} · {streak.currentStreak}{" "}
+              sem.
+            </Badge>
             <Badge variant="outline">Máx: {streak.maxStreak} sem.</Badge>
           </div>
         </div>

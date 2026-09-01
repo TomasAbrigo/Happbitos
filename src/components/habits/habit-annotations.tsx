@@ -30,7 +30,7 @@ function AnnotationRow({
       <Input
         name="text"
         defaultValue={text ?? ""}
-        placeholder="¿Qué pasó este día?"
+        placeholder="¿Cuál es la excusa?"
         className="h-8"
       />
       <Button type="submit" size="sm" variant="secondary" disabled={pending}>
@@ -53,7 +53,7 @@ export function HabitAnnotations({
   if (missedDates.length === 0) {
     return (
       <p className="text-muted-foreground text-sm">
-        Todavía no hay días no cumplidos para anotar.
+        Impecable. Ni un día no cumplido para anotar.
       </p>
     );
   }

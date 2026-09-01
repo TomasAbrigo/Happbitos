@@ -5,6 +5,7 @@ import { db } from "@/db";
 import { annotations, habitEntries, habits, reactions } from "@/db/schema";
 import { getCurrentUser } from "@/lib/auth/current-user";
 import { getHabitStreak } from "@/lib/habits/get-habit-streak";
+import { getStreakFlavor } from "@/lib/habits/streak-flavor";
 import { Badge } from "@/components/ui/badge";
 import { HabitAnnotations } from "@/components/habits/habit-annotations";
 import { HabitHeatmap } from "@/components/habits/habit-heatmap";
@@ -68,7 +69,10 @@ export default async function HabitDetailPage({
             {habit.name}
           </h1>
           <div className="flex gap-2">
-            <Badge>Racha: {streak.currentStreak} sem.</Badge>
+            <Badge>
+              {getStreakFlavor(streak.currentStreak)} · {streak.currentStreak}{" "}
+              sem.
+            </Badge>
             <Badge variant="outline">Máx: {streak.maxStreak} sem.</Badge>
           </div>
         </div>
@@ -83,7 +87,7 @@ export default async function HabitDetailPage({
           <h2 className="mb-2 text-lg font-medium">Reacciones recibidas</h2>
           {receivedReactions.length === 0 ? (
             <p className="text-muted-foreground text-sm">
-              Todavía nadie reaccionó a este hábito.
+              Silencio absoluto. Nadie te bancó todavía.
             </p>
           ) : (
             <ul className="flex flex-col gap-1 text-sm">

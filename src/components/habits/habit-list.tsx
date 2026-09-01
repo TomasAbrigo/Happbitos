@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { archiveHabit, createHabit, updateHabit } from "@/app/habits/actions";
 import type { habitEntries, habits } from "@/db/schema";
 import type { StreakResult } from "@/lib/habits/streak";
+import { getStreakFlavor } from "@/lib/habits/streak-flavor";
 import { HabitCheckin } from "./habit-checkin";
 import { HabitDialog } from "./habit-dialog";
 
@@ -44,7 +45,8 @@ export function HabitList({
 
       {items.length === 0 && (
         <p className="text-muted-foreground text-sm">
-          Todavía no creaste ningún hábito.
+          Ni un hábito todavía. ¿Vamos a arrancar o esto es solo para mirarlo
+          fijo?
         </p>
       )}
 
@@ -86,7 +88,9 @@ export function HabitList({
               <Badge variant="secondary">{typeLabel(habit)}</Badge>
               <Badge variant="secondary">{frequencyLabel(habit)}</Badge>
               <Badge>
-                Racha: {streaksByHabit.get(habit.id)?.currentStreak ?? 0} sem.
+                {getStreakFlavor(streaksByHabit.get(habit.id)?.currentStreak ?? 0)}
+                {" · "}
+                {streaksByHabit.get(habit.id)?.currentStreak ?? 0} sem.
               </Badge>
               <Badge variant="outline">
                 Máx: {streaksByHabit.get(habit.id)?.maxStreak ?? 0} sem.
