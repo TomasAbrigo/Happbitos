@@ -2,10 +2,12 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { archiveHabit, createHabit, updateHabit } from "@/app/habits/actions";
-import type { habits } from "@/db/schema";
+import type { habitEntries, habits } from "@/db/schema";
+import { HabitCheckin } from "./habit-checkin";
 import { HabitDialog } from "./habit-dialog";
 
 type Habit = typeof habits.$inferSelect;
+type HabitEntry = typeof habitEntries.$inferSelect;
 
 function frequencyLabel(habit: Habit) {
   if (habit.frequencyKind === "daily") return "Todos los días";
@@ -17,7 +19,13 @@ function typeLabel(habit: Habit) {
   return `Meta: ${habit.target}`;
 }
 
-export function HabitList({ habits: items }: { habits: Habit[] }) {
+export function HabitList({
+  habits: items,
+  todayEntries,
+}: {
+  habits: Habit[];
+  todayEntries: Map<string, HabitEntry>;
+}) {
   return (
     <div className="flex w-full max-w-md flex-col gap-4">
       <div className="flex items-center justify-between">
@@ -65,9 +73,16 @@ export function HabitList({ habits: items }: { habits: Habit[] }) {
               </form>
             </div>
           </CardHeader>
-          <CardContent className="flex gap-2">
-            <Badge variant="secondary">{typeLabel(habit)}</Badge>
-            <Badge variant="secondary">{frequencyLabel(habit)}</Badge>
+          <CardContent className="flex flex-col gap-3">
+            <div className="flex gap-2">
+              <Badge variant="secondary">{typeLabel(habit)}</Badge>
+              <Badge variant="secondary">{frequencyLabel(habit)}</Badge>
+            </div>
+            <HabitCheckin
+              habitId={habit.id}
+              type={habit.type}
+              todayEntry={todayEntries.get(habit.id)}
+            />
           </CardContent>
         </Card>
       ))}

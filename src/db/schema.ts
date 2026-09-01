@@ -1,8 +1,11 @@
 import {
+  boolean,
+  date,
   integer,
   pgTable,
   text,
   timestamp,
+  unique,
   uuid,
 } from "drizzle-orm/pg-core";
 
@@ -34,3 +37,20 @@ export const habits = pgTable("habits", {
     .notNull()
     .defaultNow(),
 });
+
+export const habitEntries = pgTable(
+  "habit_entries",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    habitId: uuid("habit_id")
+      .notNull()
+      .references(() => habits.id, { onDelete: "cascade" }),
+    date: date("date").notNull(),
+    completed: boolean("completed").notNull().default(false),
+    quantity: integer("quantity"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [unique().on(table.habitId, table.date)],
+);
