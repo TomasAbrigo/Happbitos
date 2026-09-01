@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -50,7 +51,11 @@ export function HabitList({
       {items.map((habit) => (
         <Card key={habit.id}>
           <CardHeader className="flex flex-row items-start justify-between">
-            <CardTitle className="text-base">{habit.name}</CardTitle>
+            <CardTitle className="text-base">
+              <Link href={`/habits/${habit.id}`} className="hover:underline">
+                {habit.name}
+              </Link>
+            </CardTitle>
             <div className="flex gap-2">
               <HabitDialog
                 title="Editar hábito"
