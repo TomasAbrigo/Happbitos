@@ -55,6 +55,12 @@ export function HabitCheckin({
         {pending ? "..." : "Guardar"}
       </Button>
 
+      {!pending && todayEntry?.completed && (
+        <span className="text-primary animate-in zoom-in-75 fade-in-0 text-xs font-medium duration-300">
+          Ahí está, eso es todo.
+        </span>
+      )}
+
       {state.error && (
         <span className="text-destructive text-xs">{state.error}</span>
       )}

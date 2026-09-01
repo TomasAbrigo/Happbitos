@@ -3,12 +3,17 @@ import { getCurrentUser } from "@/lib/auth/current-user";
 import { getOtherUser } from "@/lib/auth/other-user";
 import { getWeeklySummaryForUser } from "@/lib/habits/get-weekly-summary";
 import type { HabitWeekSummary } from "@/lib/habits/weekly-summary";
+import { getCompletionQuip, getStreakFlavor } from "@/lib/habits/streak-flavor";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 function SummaryList({ items }: { items: HabitWeekSummary[] }) {
   if (items.length === 0) {
-    return <p className="text-muted-foreground text-sm">Sin hábitos.</p>;
+    return (
+      <p className="text-muted-foreground text-sm">
+        Sin hábitos activos por acá.
+      </p>
+    );
   }
 
   return (
@@ -20,9 +25,12 @@ function SummaryList({ items }: { items: HabitWeekSummary[] }) {
           </CardHeader>
           <CardContent className="flex flex-wrap gap-2">
             <Badge variant="secondary">
-              {Math.round(item.completionRate * 100)}% esta semana
+              {getCompletionQuip(item.completionRate)} ·{" "}
+              {Math.round(item.completionRate * 100)}%
             </Badge>
-            <Badge>Racha: {item.currentStreak} sem.</Badge>
+            <Badge>
+              {getStreakFlavor(item.currentStreak)} · {item.currentStreak} sem.
+            </Badge>
             <Badge variant="outline">Máx: {item.maxStreak} sem.</Badge>
           </CardContent>
         </Card>

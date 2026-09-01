@@ -5,6 +5,7 @@ import { habits } from "@/db/schema";
 import { getCurrentUser } from "@/lib/auth/current-user";
 import { getOtherUser } from "@/lib/auth/other-user";
 import { getHabitStreak } from "@/lib/habits/get-habit-streak";
+import { getStreakFlavor } from "@/lib/habits/streak-flavor";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
@@ -22,7 +23,7 @@ export default async function FriendPage() {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center gap-2 p-8">
         <p className="text-muted-foreground text-sm">
-          Todavía no hay otro usuario en la app.
+          Acá se supone que iba tu compañero de ruta, pero está solo.
         </p>
         <Link href="/" className="text-sm underline">
           Volver
@@ -63,7 +64,7 @@ export default async function FriendPage() {
 
         {friendHabits.length === 0 && (
           <p className="text-muted-foreground text-sm">
-            {friend.username} todavía no tiene hábitos activos.
+            {friend.username} anda de vago: cero hábitos activos.
           </p>
         )}
 
@@ -80,7 +81,10 @@ export default async function FriendPage() {
               </CardHeader>
               <CardContent className="flex flex-wrap gap-2">
                 <Badge variant="secondary">{frequencyLabel(habit)}</Badge>
-                <Badge>Racha: {streak?.currentStreak ?? 0} sem.</Badge>
+                <Badge>
+                  {getStreakFlavor(streak?.currentStreak ?? 0)} ·{" "}
+                  {streak?.currentStreak ?? 0} sem.
+                </Badge>
                 <Badge variant="outline">Máx: {streak?.maxStreak ?? 0} sem.</Badge>
               </CardContent>
             </Card>
