@@ -56,6 +56,25 @@ export const habitEntries = pgTable(
   (table) => [unique().on(table.habitId, table.date)],
 );
 
+export const reactions = pgTable(
+  "reactions",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    fromUserId: uuid("from_user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    habitId: uuid("habit_id")
+      .notNull()
+      .references(() => habits.id, { onDelete: "cascade" }),
+    weekStart: date("week_start").notNull(),
+    sticker: text("sticker").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [unique().on(table.fromUserId, table.habitId, table.weekStart)],
+);
+
 export const annotations = pgTable(
   "annotations",
   {
