@@ -2,6 +2,7 @@ import { and, eq, inArray } from "drizzle-orm";
 import { db } from "@/db";
 import { habitEntries, habits } from "@/db/schema";
 import { getCurrentUser } from "@/lib/auth/current-user";
+import { getHabitStreak } from "@/lib/habits/get-habit-streak";
 import { logout } from "@/app/login/actions";
 import { Button } from "@/components/ui/button";
 import { HabitList } from "@/components/habits/habit-list";
@@ -31,6 +32,27 @@ export default async function Home() {
     : [];
   const todayEntries = new Map(todayEntriesList.map((e) => [e.habitId, e]));
 
+  const allCompletedEntries = habitIds.length
+    ? await db.query.habitEntries.findMany({
+        where: and(
+          inArray(habitEntries.habitId, habitIds),
+          eq(habitEntries.completed, true),
+        ),
+      })
+    : [];
+  const completedDatesByHabit = new Map<string, string[]>();
+  for (const entry of allCompletedEntries) {
+    const list = completedDatesByHabit.get(entry.habitId) ?? [];
+    list.push(entry.date);
+    completedDatesByHabit.set(entry.habitId, list);
+  }
+  const streaksByHabit = new Map(
+    activeHabits.map((habit) => [
+      habit.id,
+      getHabitStreak(habit, completedDatesByHabit.get(habit.id) ?? []),
+    ]),
+  );
+
   return (
     <div className="flex min-h-screen flex-col items-center gap-6 p-8">
       <div className="flex w-full max-w-md items-center justify-between">
@@ -45,7 +67,11 @@ export default async function Home() {
         </form>
       </div>
 
-      <HabitList habits={activeHabits} todayEntries={todayEntries} />
+      <HabitList
+        habits={activeHabits}
+        todayEntries={todayEntries}
+        streaksByHabit={streaksByHabit}
+      />
     </div>
   );
 }

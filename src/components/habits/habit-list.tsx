@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { archiveHabit, createHabit, updateHabit } from "@/app/habits/actions";
 import type { habitEntries, habits } from "@/db/schema";
+import type { StreakResult } from "@/lib/habits/streak";
 import { HabitCheckin } from "./habit-checkin";
 import { HabitDialog } from "./habit-dialog";
 
@@ -22,9 +23,11 @@ function typeLabel(habit: Habit) {
 export function HabitList({
   habits: items,
   todayEntries,
+  streaksByHabit,
 }: {
   habits: Habit[];
   todayEntries: Map<string, HabitEntry>;
+  streaksByHabit: Map<string, StreakResult>;
 }) {
   return (
     <div className="flex w-full max-w-md flex-col gap-4">
@@ -74,9 +77,15 @@ export function HabitList({
             </div>
           </CardHeader>
           <CardContent className="flex flex-col gap-3">
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               <Badge variant="secondary">{typeLabel(habit)}</Badge>
               <Badge variant="secondary">{frequencyLabel(habit)}</Badge>
+              <Badge>
+                Racha: {streaksByHabit.get(habit.id)?.currentStreak ?? 0} sem.
+              </Badge>
+              <Badge variant="outline">
+                Máx: {streaksByHabit.get(habit.id)?.maxStreak ?? 0} sem.
+              </Badge>
             </div>
             <HabitCheckin
               habitId={habit.id}

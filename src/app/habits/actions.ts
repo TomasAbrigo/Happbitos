@@ -101,7 +101,7 @@ export async function archiveHabit(habitId: string) {
 
   await db
     .update(habits)
-    .set({ status: "archived" })
+    .set({ status: "archived", archivedAt: new Date() })
     .where(and(eq(habits.id, habitId), eq(habits.userId, user.id)));
 
   revalidatePath("/");
