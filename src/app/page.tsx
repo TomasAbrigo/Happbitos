@@ -1,10 +1,14 @@
-import { and, eq } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import { db } from "@/db";
-import { habits } from "@/db/schema";
+import { habitEntries, habits } from "@/db/schema";
 import { getCurrentUser } from "@/lib/auth/current-user";
 import { logout } from "@/app/login/actions";
 import { Button } from "@/components/ui/button";
 import { HabitList } from "@/components/habits/habit-list";
+
+function todayIso() {
+  return new Date().toISOString().slice(0, 10);
+}
 
 export default async function Home() {
   const user = await getCurrentUser();
@@ -14,6 +18,18 @@ export default async function Home() {
     where: and(eq(habits.userId, user.id), eq(habits.status, "active")),
     orderBy: (h, { asc }) => [asc(h.createdAt)],
   });
+
+  const today = todayIso();
+  const habitIds = activeHabits.map((h) => h.id);
+  const todayEntriesList = habitIds.length
+    ? await db.query.habitEntries.findMany({
+        where: and(
+          inArray(habitEntries.habitId, habitIds),
+          eq(habitEntries.date, today),
+        ),
+      })
+    : [];
+  const todayEntries = new Map(todayEntriesList.map((e) => [e.habitId, e]));
 
   return (
     <div className="flex min-h-screen flex-col items-center gap-6 p-8">
@@ -29,7 +45,7 @@ export default async function Home() {
         </form>
       </div>
 
-      <HabitList habits={activeHabits} />
+      <HabitList habits={activeHabits} todayEntries={todayEntries} />
     </div>
   );
 }
