@@ -55,3 +55,19 @@ export const habitEntries = pgTable(
   },
   (table) => [unique().on(table.habitId, table.date)],
 );
+
+export const annotations = pgTable(
+  "annotations",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    habitId: uuid("habit_id")
+      .notNull()
+      .references(() => habits.id, { onDelete: "cascade" }),
+    date: date("date").notNull(),
+    text: text("text").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [unique().on(table.habitId, table.date)],
+);

@@ -2,10 +2,11 @@ import { and, eq } from "drizzle-orm";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { db } from "@/db";
-import { habitEntries, habits } from "@/db/schema";
+import { annotations, habitEntries, habits } from "@/db/schema";
 import { getCurrentUser } from "@/lib/auth/current-user";
 import { getHabitStreak } from "@/lib/habits/get-habit-streak";
 import { Badge } from "@/components/ui/badge";
+import { HabitAnnotations } from "@/components/habits/habit-annotations";
 import { HabitHeatmap } from "@/components/habits/habit-heatmap";
 
 export default async function HabitDetailPage({
@@ -36,6 +37,16 @@ export default async function HabitDetailPage({
   const streak = getHabitStreak(habit, [...completedDates]);
   const habitCreatedAt = habit.createdAt.toISOString().slice(0, 10);
 
+  const habitAnnotations = await db.query.annotations.findMany({
+    where: eq(annotations.habitId, habit.id),
+  });
+  const annotationByDate = new Map(
+    habitAnnotations.map((a) => [a.date, a.text]),
+  );
+  const missedDatesWithNotes = [...missedDates]
+    .sort((a, b) => (a < b ? 1 : -1))
+    .map((date) => ({ date, text: annotationByDate.get(date) ?? null }));
+
   return (
     <div className="flex min-h-screen flex-col items-center gap-6 p-8">
       <div className="flex w-full max-w-2xl flex-col gap-4">
@@ -58,6 +69,14 @@ export default async function HabitDetailPage({
           missedDates={missedDates}
           habitCreatedAt={habitCreatedAt}
         />
+
+        <div>
+          <h2 className="mb-2 text-lg font-medium">Días no cumplidos</h2>
+          <HabitAnnotations
+            habitId={habit.id}
+            missedDates={missedDatesWithNotes}
+          />
+        </div>
       </div>
     </div>
   );
