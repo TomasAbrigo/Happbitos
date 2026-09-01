@@ -65,6 +65,13 @@ export default async function Home() {
           <Button
             variant="secondary"
             size="sm"
+            render={<Link href="/summary" />}
+          >
+            Resumen semanal
+          </Button>
+          <Button
+            variant="secondary"
+            size="sm"
             render={<Link href="/friend" />}
           >
             Progreso del otro
