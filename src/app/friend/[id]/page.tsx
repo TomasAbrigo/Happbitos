@@ -2,12 +2,21 @@ import { and, eq } from "drizzle-orm";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { db } from "@/db";
-import { annotations, habitEntries, habits } from "@/db/schema";
+import { annotations, habitEntries, habits, reactions } from "@/db/schema";
 import { getCurrentUser } from "@/lib/auth/current-user";
 import { getOtherUser } from "@/lib/auth/other-user";
 import { getHabitStreak } from "@/lib/habits/get-habit-streak";
 import { Badge } from "@/components/ui/badge";
 import { HabitHeatmap } from "@/components/habits/habit-heatmap";
+import { ReactionPicker } from "@/components/reactions/reaction-picker";
+
+function currentWeekStart(): string {
+  const date = new Date();
+  const dayOfWeek = date.getUTCDay();
+  const diffToMonday = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+  date.setUTCDate(date.getUTCDate() + diffToMonday);
+  return date.toISOString().slice(0, 10);
+}
 
 export default async function FriendHabitDetailPage({
   params,
@@ -43,6 +52,15 @@ export default async function FriendHabitDetailPage({
     where: eq(annotations.habitId, habit.id),
   });
 
+  const weekStart = currentWeekStart();
+  const myReactionThisWeek = await db.query.reactions.findFirst({
+    where: and(
+      eq(reactions.habitId, habit.id),
+      eq(reactions.fromUserId, user.id),
+      eq(reactions.weekStart, weekStart),
+    ),
+  });
+
   return (
     <div className="flex min-h-screen flex-col items-center gap-6 p-8">
       <div className="flex w-full max-w-2xl flex-col gap-4">
@@ -65,6 +83,17 @@ export default async function FriendHabitDetailPage({
           missedDates={missedDates}
           habitCreatedAt={habitCreatedAt}
         />
+
+        <div>
+          <h2 className="mb-2 text-lg font-medium">
+            Reaccionar a esta semana
+          </h2>
+          <ReactionPicker
+            habitId={habit.id}
+            weekStart={weekStart}
+            currentSticker={myReactionThisWeek?.sticker ?? null}
+          />
+        </div>
 
         <div>
           <h2 className="mb-2 text-lg font-medium">Notas de días no cumplidos</h2>

@@ -2,7 +2,7 @@ import { and, eq } from "drizzle-orm";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { db } from "@/db";
-import { annotations, habitEntries, habits } from "@/db/schema";
+import { annotations, habitEntries, habits, reactions } from "@/db/schema";
 import { getCurrentUser } from "@/lib/auth/current-user";
 import { getHabitStreak } from "@/lib/habits/get-habit-streak";
 import { Badge } from "@/components/ui/badge";
@@ -47,6 +47,15 @@ export default async function HabitDetailPage({
     .sort((a, b) => (a < b ? 1 : -1))
     .map((date) => ({ date, text: annotationByDate.get(date) ?? null }));
 
+  const receivedReactions = await db.query.reactions.findMany({
+    where: eq(reactions.habitId, habit.id),
+    orderBy: (r, { desc }) => [desc(r.weekStart)],
+  });
+  const allUsers = await db.query.users.findMany({
+    columns: { id: true, username: true },
+  });
+  const usernameById = new Map(allUsers.map((u) => [u.id, u.username]));
+
   return (
     <div className="flex min-h-screen flex-col items-center gap-6 p-8">
       <div className="flex w-full max-w-2xl flex-col gap-4">
@@ -69,6 +78,28 @@ export default async function HabitDetailPage({
           missedDates={missedDates}
           habitCreatedAt={habitCreatedAt}
         />
+
+        <div>
+          <h2 className="mb-2 text-lg font-medium">Reacciones recibidas</h2>
+          {receivedReactions.length === 0 ? (
+            <p className="text-muted-foreground text-sm">
+              Todavía nadie reaccionó a este hábito.
+            </p>
+          ) : (
+            <ul className="flex flex-col gap-1 text-sm">
+              {receivedReactions.map((r) => (
+                <li key={r.id} className="flex gap-2">
+                  <span className="text-muted-foreground w-24 shrink-0">
+                    {r.weekStart}
+                  </span>
+                  <span>
+                    {usernameById.get(r.fromUserId) ?? "?"}: {r.sticker}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
 
         <div>
           <h2 className="mb-2 text-lg font-medium">Días no cumplidos</h2>
