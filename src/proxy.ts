@@ -10,7 +10,10 @@ export const config = {
 };
 
 export default async function proxy(request: NextRequest) {
-  if (PUBLIC_ASSET_PATTERN.test(request.nextUrl.pathname)) {
+  if (
+    PUBLIC_ASSET_PATTERN.test(request.nextUrl.pathname) ||
+    request.nextUrl.pathname.startsWith("/api/cron/")
+  ) {
     return NextResponse.next();
   }
 

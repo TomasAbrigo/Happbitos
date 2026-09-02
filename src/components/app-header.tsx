@@ -3,6 +3,7 @@ import Link from "next/link";
 import { logout } from "@/app/login/actions";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { NotificationToggle } from "@/components/notification-toggle";
 
 export function PrimaryHeader({ username }: { username: string }) {
   return (
@@ -57,6 +58,7 @@ export function PrimaryHeader({ username }: { username: string }) {
               Salir
             </Button>
           </form>
+          <NotificationToggle />
           <ThemeToggle />
         </nav>
       </div>
@@ -88,6 +90,7 @@ export function DetailHeader({
               Happbitos
             </span>
           )}
+          <NotificationToggle />
           <ThemeToggle />
         </div>
       </div>
