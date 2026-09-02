@@ -62,7 +62,7 @@ export function HabitForm({
           name="type"
           value={type}
           onChange={(e) => setType(e.target.value as typeof type)}
-          className="border-input h-9 rounded-md border bg-transparent px-3 text-sm"
+          className="h-11 rounded-lg border border-transparent bg-muted px-3.5 text-base outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 md:text-sm"
         >
           <option value="binary">Binario (hecho / no hecho)</option>
           <option value="quantity">Cantidad con meta</option>
@@ -92,7 +92,7 @@ export function HabitForm({
           onChange={(e) =>
             setFrequencyKind(e.target.value as typeof frequencyKind)
           }
-          className="border-input h-9 rounded-md border bg-transparent px-3 text-sm"
+          className="h-11 rounded-lg border border-transparent bg-muted px-3.5 text-base outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 md:text-sm"
         >
           <option value="daily">Todos los días</option>
           <option value="n_per_week">N veces por semana</option>

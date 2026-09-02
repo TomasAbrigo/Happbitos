@@ -13,21 +13,31 @@ function getWeekStart(date: Date): Date {
 }
 
 const statusClass: Record<DayStatus, string> = {
-  completed: "bg-primary",
-  missed: "bg-destructive/40",
+  completed: "bg-success",
+  missed: "bg-destructive/60",
   none: "bg-muted",
 };
+
+const monthFormatter = new Intl.DateTimeFormat("es-AR", { month: "long" });
+
+function capitalize(word: string) {
+  return word.slice(0, 1).toUpperCase() + word.slice(1);
+}
 
 export function HabitHeatmap({
   completedDates,
   missedDates,
   weeks = 20,
   habitCreatedAt,
+  showMonthLabels = true,
+  showLegend = true,
 }: {
   completedDates: Set<string>;
   missedDates: Set<string>;
   weeks?: number;
   habitCreatedAt: string;
+  showMonthLabels?: boolean;
+  showLegend?: boolean;
 }) {
   const today = new Date();
   const currentWeekStart = getWeekStart(today);
@@ -48,8 +58,28 @@ export function HabitHeatmap({
     return "none";
   }
 
+  let lastMonth = -1;
+
   return (
     <div className="flex flex-col gap-2">
+      {showMonthLabels && (
+        <div className="text-muted-foreground flex gap-1 text-xs">
+          {columns.map((weekStart) => {
+            const month = weekStart.getUTCMonth();
+            const isNewMonth = month !== lastMonth;
+            lastMonth = month;
+            return (
+              <div key={toIsoDate(weekStart)} className="w-3 shrink-0">
+                {isNewMonth && (
+                  <span className="block -translate-x-0.5 whitespace-nowrap">
+                    {capitalize(monthFormatter.format(weekStart))}
+                  </span>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
       <div className="flex gap-1 overflow-x-auto">
         {columns.map((weekStart) => (
           <div key={toIsoDate(weekStart)} className="flex flex-col gap-1">
@@ -70,17 +100,29 @@ export function HabitHeatmap({
           </div>
         ))}
       </div>
-      <div className="text-muted-foreground flex items-center gap-3 text-xs">
-        <span className="flex items-center gap-1">
-          <span className="bg-primary size-3 rounded-sm" /> Cumplido
-        </span>
-        <span className="flex items-center gap-1">
-          <span className="bg-destructive/40 size-3 rounded-sm" /> No cumplido
-        </span>
-        <span className="flex items-center gap-1">
-          <span className="bg-muted size-3 rounded-sm" /> Sin registro
-        </span>
-      </div>
+      {showLegend && (
+        <div className="text-muted-foreground flex items-center gap-3 text-xs">
+          <span className="flex items-center gap-1">
+            <span className="bg-success size-3 rounded-sm" /> Cumplido
+          </span>
+          <span className="flex items-center gap-1">
+            <span className="bg-destructive/60 size-3 rounded-sm" /> No
+            cumplido
+          </span>
+          <span className="flex items-center gap-1">
+            <span className="bg-muted size-3 rounded-sm" /> Sin registro
+          </span>
+        </div>
+      )}
     </div>
   );
+}
+
+export function habitCompletionRate(
+  completedDates: Set<string>,
+  missedDates: Set<string>,
+): number {
+  const total = completedDates.size + missedDates.size;
+  if (total === 0) return 0;
+  return completedDates.size / total;
 }

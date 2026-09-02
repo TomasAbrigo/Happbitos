@@ -106,3 +106,26 @@ export async function archiveHabit(habitId: string) {
 
   revalidatePath("/");
 }
+
+export async function unarchiveHabit(habitId: string) {
+  const user = await getCurrentUser();
+  if (!user) return;
+
+  await db
+    .update(habits)
+    .set({ status: "active", archivedAt: null })
+    .where(and(eq(habits.id, habitId), eq(habits.userId, user.id)));
+
+  revalidatePath("/");
+}
+
+export async function deleteHabit(habitId: string) {
+  const user = await getCurrentUser();
+  if (!user) return;
+
+  await db
+    .delete(habits)
+    .where(and(eq(habits.id, habitId), eq(habits.userId, user.id)));
+
+  revalidatePath("/");
+}

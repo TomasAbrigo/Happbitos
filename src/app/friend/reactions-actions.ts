@@ -40,7 +40,7 @@ export async function reactToHabit(
       set: { sticker },
     });
 
-  revalidatePath(`/friend/${habitId}`);
+  revalidatePath("/friend");
   revalidatePath(`/habits/${habitId}`);
   return { error: null };
 }
