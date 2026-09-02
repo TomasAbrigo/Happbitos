@@ -2,8 +2,12 @@ import { and, eq, gte, inArray } from "drizzle-orm";
 import { db } from "@/db";
 import { habitEntries, habits, reactions } from "@/db/schema";
 import { getCurrentUser } from "@/lib/auth/current-user";
+import { getOtherUser } from "@/lib/auth/other-user";
 import { getHabitStreak } from "@/lib/habits/get-habit-streak";
+import { getAchievementsForUser } from "@/lib/achievements/get-achievements";
 import { PrimaryHeader } from "@/components/app-header";
+import { AchievementsWidget } from "@/components/dashboard/achievements-widget";
+import { TeamPulseWidget } from "@/components/dashboard/team-pulse-widget";
 import { ArchivedHabits } from "@/components/habits/archived-habits";
 import { HabitList } from "@/components/habits/habit-list";
 
@@ -122,21 +126,56 @@ export default async function Home() {
     ),
   ];
 
+  const friend = await getOtherUser(user.id);
+  let friendPulse = null;
+  if (friend) {
+    const friendActiveHabits = await db.query.habits.findMany({
+      where: and(eq(habits.userId, friend.id), eq(habits.status, "active")),
+    });
+    const friendHabitIds = friendActiveHabits.map((h) => h.id);
+    const friendDoneToday = friendHabitIds.length
+      ? await db.query.habitEntries.findMany({
+          where: and(
+            inArray(habitEntries.habitId, friendHabitIds),
+            eq(habitEntries.date, today),
+            eq(habitEntries.completed, true),
+          ),
+        })
+      : [];
+    friendPulse = {
+      username: friend.username,
+      done: friendDoneToday.length,
+      total: friendActiveHabits.length,
+    };
+  }
+
+  const achievements = await getAchievementsForUser(user.id);
+
   return (
     <div className="flex min-h-screen flex-col items-center">
       <PrimaryHeader username={user.username} />
 
-      <div className="flex w-full max-w-4xl flex-col gap-8 p-4 md:p-8">
-        <HabitList
-          habits={activeHabits}
-          todayEntries={todayEntries}
-          streaksByHabit={streaksByHabit}
-          recentActivityByHabit={recentActivityByHabit}
-          doneToday={doneToday}
-          reactionCount={weekReactions.length}
-          reactedHabitNames={reactedHabitNames}
-        />
-        <ArchivedHabits habits={archivedHabits} />
+      <div className="flex w-full max-w-6xl flex-col gap-8 p-4 md:p-8 lg:grid lg:grid-cols-[1fr_300px] lg:items-start lg:gap-6">
+        <div className="flex flex-col gap-8">
+          <HabitList
+            habits={activeHabits}
+            todayEntries={todayEntries}
+            streaksByHabit={streaksByHabit}
+            recentActivityByHabit={recentActivityByHabit}
+            doneToday={doneToday}
+            reactionCount={weekReactions.length}
+            reactedHabitNames={reactedHabitNames}
+          />
+          <ArchivedHabits habits={archivedHabits} />
+        </div>
+
+        <aside className="flex flex-col gap-4">
+          <TeamPulseWidget
+            me={{ username: user.username, done: doneToday, total: activeHabits.length }}
+            friend={friendPulse}
+          />
+          <AchievementsWidget achievements={achievements} />
+        </aside>
       </div>
     </div>
   );
