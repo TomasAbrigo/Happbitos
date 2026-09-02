@@ -44,6 +44,14 @@ export function PrimaryHeader({ username }: { username: string }) {
           >
             ¿Aburrido?
           </Button>
+          <Button
+            size="sm"
+            variant="ghost"
+            nativeButton={false}
+            render={<Link href="/challenges" />}
+          >
+            Desafíos
+          </Button>
           <form action={logout}>
             <Button type="submit" size="sm" variant="ghost">
               Salir
