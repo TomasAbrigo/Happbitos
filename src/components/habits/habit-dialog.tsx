@@ -4,6 +4,7 @@ import { useState } from "react";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -14,6 +15,7 @@ import type { HabitFormState } from "@/app/habits/actions";
 type HabitDialogProps = {
   trigger: React.ReactElement;
   title: string;
+  description?: string;
   action: (
     state: HabitFormState,
     formData: FormData,
@@ -31,6 +33,7 @@ type HabitDialogProps = {
 export function HabitDialog({
   trigger,
   title,
+  description,
   action,
   defaultValues,
   submitLabel,
@@ -42,7 +45,10 @@ export function HabitDialog({
       <DialogTrigger render={trigger} />
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>{title}</DialogTitle>
+          <DialogTitle className="text-lg">{title}</DialogTitle>
+          {description && (
+            <DialogDescription>{description}</DialogDescription>
+          )}
         </DialogHeader>
         <HabitForm
           action={action}

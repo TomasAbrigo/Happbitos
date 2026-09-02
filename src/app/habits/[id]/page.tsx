@@ -1,14 +1,55 @@
 import { and, eq } from "drizzle-orm";
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { db } from "@/db";
 import { annotations, habitEntries, habits, reactions } from "@/db/schema";
 import { getCurrentUser } from "@/lib/auth/current-user";
 import { getHabitStreak } from "@/lib/habits/get-habit-streak";
-import { getStreakFlavor } from "@/lib/habits/streak-flavor";
-import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { DetailHeader } from "@/components/app-header";
 import { HabitAnnotations } from "@/components/habits/habit-annotations";
-import { HabitHeatmap } from "@/components/habits/habit-heatmap";
+import {
+  HabitHeatmap,
+  habitCompletionRate,
+} from "@/components/habits/habit-heatmap";
+import { StreakPills } from "@/components/habits/streak-pills";
+
+function typeLabel(habit: { type: string; target: number | null }) {
+  if (habit.type === "binary") return "Binario";
+  return `Meta: ${habit.target}`;
+}
+
+function frequencyLabel(habit: {
+  frequencyKind: string;
+  timesPerWeek: number | null;
+}) {
+  if (habit.frequencyKind === "daily") return "Todos los días";
+  return `${habit.timesPerWeek}x por semana`;
+}
+
+const weekFormatter = new Intl.DateTimeFormat("es-AR", {
+  day: "numeric",
+  month: "short",
+  timeZone: "UTC",
+});
+
+function formatWeekStart(iso: string) {
+  return `Sem. del ${weekFormatter.format(new Date(`${iso}T00:00:00.000Z`))}`;
+}
+
+const REACTION_TONES = [
+  "bg-accent text-accent-foreground",
+  "bg-card ring-1 ring-border",
+  "bg-success/15 text-success ring-1 ring-success/30",
+  "bg-card ring-1 ring-border",
+];
+
+function reactionTone(sticker: string) {
+  let hash = 0;
+  for (let i = 0; i < sticker.length; i++) {
+    hash = (hash * 31 + sticker.charCodeAt(i)) >>> 0;
+  }
+  return REACTION_TONES[hash % REACTION_TONES.length];
+}
 
 export default async function HabitDetailPage({
   params,
@@ -37,6 +78,7 @@ export default async function HabitDetailPage({
 
   const streak = getHabitStreak(habit, [...completedDates]);
   const habitCreatedAt = habit.createdAt.toISOString().slice(0, 10);
+  const completionRate = habitCompletionRate(completedDates, missedDates);
 
   const habitAnnotations = await db.query.annotations.findMany({
     where: eq(annotations.habitId, habit.id),
@@ -58,59 +100,88 @@ export default async function HabitDetailPage({
   const usernameById = new Map(allUsers.map((u) => [u.id, u.username]));
 
   return (
-    <div className="flex min-h-screen flex-col items-center gap-6 p-8">
-      <div className="flex w-full max-w-2xl flex-col gap-4">
-        <Link href="/" className="text-muted-foreground text-sm">
-          ← Volver
-        </Link>
+    <div className="flex min-h-screen flex-col items-center">
+      <DetailHeader backHref="/" backLabel="Volver a tus hábitos" />
 
-        <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-semibold tracking-tight">
-            {habit.name}
-          </h1>
-          <div className="flex gap-2">
-            <Badge>
-              {getStreakFlavor(streak.currentStreak)} · {streak.currentStreak}{" "}
-              sem.
-            </Badge>
-            <Badge variant="outline">Máx: {streak.maxStreak} sem.</Badge>
-          </div>
-        </div>
-
-        <HabitHeatmap
-          completedDates={completedDates}
-          missedDates={missedDates}
-          habitCreatedAt={habitCreatedAt}
-        />
-
-        <div>
-          <h2 className="mb-2 text-lg font-medium">Reacciones recibidas</h2>
-          {receivedReactions.length === 0 ? (
+      <div className="flex w-full max-w-4xl flex-col gap-4 p-4 md:p-8">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <h1 className="font-heading text-3xl font-bold">{habit.name}</h1>
             <p className="text-muted-foreground text-sm">
-              Silencio absoluto. Nadie te bancó todavía.
+              {typeLabel(habit)} · {frequencyLabel(habit)}
             </p>
-          ) : (
-            <ul className="flex flex-col gap-1 text-sm">
-              {receivedReactions.map((r) => (
-                <li key={r.id} className="flex gap-2">
-                  <span className="text-muted-foreground w-24 shrink-0">
-                    {r.weekStart}
-                  </span>
-                  <span>
-                    {usernameById.get(r.fromUserId) ?? "?"}: {r.sticker}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          )}
+          </div>
+          <StreakPills current={streak.currentStreak} max={streak.maxStreak} />
         </div>
 
-        <div>
-          <h2 className="mb-2 text-lg font-medium">Días no cumplidos</h2>
-          <HabitAnnotations
-            habitId={habit.id}
-            missedDates={missedDatesWithNotes}
-          />
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+          <Card className="md:col-span-2">
+            <CardHeader className="flex flex-row items-start justify-between">
+              <div>
+                <CardTitle className="text-lg">Historial</CardTitle>
+                <p className="text-muted-foreground text-sm">
+                  Últimas 20 semanas de actividad diaria
+                </p>
+              </div>
+              <span className="text-success text-sm font-semibold">
+                {Math.round(completionRate * 100)}% cumplido
+              </span>
+            </CardHeader>
+            <CardContent>
+              <HabitHeatmap
+                completedDates={completedDates}
+                missedDates={missedDates}
+                habitCreatedAt={habitCreatedAt}
+              />
+            </CardContent>
+          </Card>
+
+          <div className="flex flex-col gap-4">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Reacciones recibidas</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {receivedReactions.length === 0 ? (
+                  <p className="text-muted-foreground text-sm">
+                    Silencio absoluto. Nadie te bancó todavía.
+                  </p>
+                ) : (
+                  <ul className="flex flex-col gap-2">
+                    {receivedReactions.map((r) => (
+                      <li
+                        key={r.id}
+                        className="flex items-center justify-between gap-2"
+                      >
+                        <span
+                          className={`rounded-full px-3 py-1.5 text-xs font-semibold ${reactionTone(r.sticker)}`}
+                        >
+                          {r.sticker}
+                        </span>
+                        <span className="text-muted-foreground text-right text-xs">
+                          {usernameById.get(r.fromUserId) ?? "?"}
+                          <br />
+                          {formatWeekStart(r.weekStart)}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Días no cumplidos</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <HabitAnnotations
+                  habitId={habit.id}
+                  missedDates={missedDatesWithNotes}
+                />
+              </CardContent>
+            </Card>
+          </div>
         </div>
       </div>
     </div>

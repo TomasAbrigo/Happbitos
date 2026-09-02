@@ -1,6 +1,7 @@
 "use client";
 
-import { useActionState } from "react";
+import { Check } from "lucide-react";
+import { useActionState, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -25,6 +26,25 @@ export function HabitCheckin({
 }) {
   const action = logHabitEntry.bind(null, habitId);
   const [state, formAction, pending] = useActionState(action, initialState);
+  const [editing, setEditing] = useState(false);
+
+  if (todayEntry?.completed && !editing) {
+    return (
+      <div className="bg-success/15 animate-in fade-in zoom-in-95 flex w-full items-center justify-between rounded-lg px-3 py-2 duration-300">
+        <span className="text-success flex items-center gap-1.5 text-sm font-medium">
+          <Check className="animate-in zoom-in spin-in-45 size-4 duration-300" strokeWidth={3} />
+          Hecho por hoy
+        </span>
+        <button
+          type="button"
+          onClick={() => setEditing(true)}
+          className="text-success/80 text-xs underline-offset-2 hover:underline"
+        >
+          Editar
+        </button>
+      </div>
+    );
+  }
 
   return (
     <form action={formAction} className="flex items-center gap-2">
@@ -36,9 +56,9 @@ export function HabitCheckin({
             type="checkbox"
             name="completed"
             defaultChecked={todayEntry?.completed ?? false}
-            className="size-4"
+            className="accent-primary size-4"
           />
-          Hoy
+          Marcá que lo hiciste hoy
         </label>
       ) : (
         <Input
@@ -47,19 +67,13 @@ export function HabitCheckin({
           min={0}
           defaultValue={todayEntry?.quantity ?? undefined}
           placeholder="Cantidad de hoy"
-          className="h-8 w-32"
+          className="h-9 w-32"
         />
       )}
 
-      <Button type="submit" size="sm" variant="secondary" disabled={pending}>
+      <Button type="submit" size="sm" variant="accent" disabled={pending}>
         {pending ? "..." : "Guardar"}
       </Button>
-
-      {!pending && todayEntry?.completed && (
-        <span className="text-primary animate-in zoom-in-75 fade-in-0 text-xs font-medium duration-300">
-          Ahí está, eso es todo.
-        </span>
-      )}
 
       {state.error && (
         <span className="text-destructive text-xs">{state.error}</span>

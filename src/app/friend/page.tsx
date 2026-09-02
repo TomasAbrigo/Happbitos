@@ -1,17 +1,23 @@
 import { and, eq } from "drizzle-orm";
+import { Eye } from "lucide-react";
 import Link from "next/link";
 import { db } from "@/db";
-import { habits } from "@/db/schema";
+import { habits, reactions } from "@/db/schema";
 import { getCurrentUser } from "@/lib/auth/current-user";
 import { getOtherUser } from "@/lib/auth/other-user";
 import { getHabitStreak } from "@/lib/habits/get-habit-streak";
-import { getStreakFlavor } from "@/lib/habits/streak-flavor";
-import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { DetailHeader } from "@/components/app-header";
+import { HabitHeatmap } from "@/components/habits/habit-heatmap";
+import { StreakPills } from "@/components/habits/streak-pills";
+import { ReactionPicker } from "@/components/reactions/reaction-picker";
 
-function frequencyLabel(habit: { frequencyKind: string; timesPerWeek: number | null }) {
-  if (habit.frequencyKind === "daily") return "Todos los días";
-  return `${habit.timesPerWeek}x por semana`;
+function currentWeekStart(): string {
+  const date = new Date();
+  const dayOfWeek = date.getUTCDay();
+  const diffToMonday = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+  date.setUTCDate(date.getUTCDate() + diffToMonday);
+  return date.toISOString().slice(0, 10);
 }
 
 export default async function FriendPage() {
@@ -37,30 +43,60 @@ export default async function FriendPage() {
     orderBy: (h, { asc }) => [asc(h.createdAt)],
   });
 
-  const streaksByHabit = new Map(
-    await Promise.all(
-      friendHabits.map(async (habit) => {
-        const entries = await db.query.habitEntries.findMany({
-          where: (e, { and: a, eq: eqOp }) =>
-            a(eqOp(e.habitId, habit.id), eqOp(e.completed, true)),
-        });
-        return [
-          habit.id,
-          getHabitStreak(habit, entries.map((e) => e.date)),
-        ] as const;
-      }),
-    ),
+  const weekStart = currentWeekStart();
+
+  const habitDetails = await Promise.all(
+    friendHabits.map(async (habit) => {
+      const entries = await db.query.habitEntries.findMany({
+        where: (e, { eq: eqOp }) => eqOp(e.habitId, habit.id),
+      });
+      const completedDates = new Set(
+        entries.filter((e) => e.completed).map((e) => e.date),
+      );
+      const missedDates = new Set(
+        entries.filter((e) => !e.completed).map((e) => e.date),
+      );
+      const streak = getHabitStreak(habit, [...completedDates]);
+      const myReactionThisWeek = await db.query.reactions.findFirst({
+        where: and(
+          eq(reactions.habitId, habit.id),
+          eq(reactions.fromUserId, user.id),
+          eq(reactions.weekStart, weekStart),
+        ),
+      });
+      return {
+        habit,
+        completedDates,
+        missedDates,
+        streak,
+        currentSticker: myReactionThisWeek?.sticker ?? null,
+      };
+    }),
   );
 
   return (
-    <div className="flex min-h-screen flex-col items-center gap-6 p-8">
-      <div className="flex w-full max-w-md flex-col gap-4">
-        <Link href="/" className="text-muted-foreground text-sm">
-          ← Volver
-        </Link>
-        <h1 className="text-2xl font-semibold tracking-tight">
-          Progreso de {friend.username}
-        </h1>
+    <div className="flex min-h-screen flex-col items-center">
+      <DetailHeader
+        backHref="/"
+        backLabel="Volver a tus hábitos"
+        right={
+          <span className="bg-muted text-muted-foreground inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium">
+            <Eye className="size-3.5" />
+            Solo lectura
+          </span>
+        }
+      />
+
+      <div className="flex w-full max-w-4xl flex-col gap-4 p-4 md:p-8">
+        <div>
+          <h1 className="font-heading text-3xl font-bold">
+            Progreso de {friend.username}
+          </h1>
+          <p className="text-muted-foreground text-sm">
+            Mirá lo que hace el otro. Tocar no podés, pero bancarlo con un
+            sticker sí.
+          </p>
+        </div>
 
         {friendHabits.length === 0 && (
           <p className="text-muted-foreground text-sm">
@@ -68,28 +104,37 @@ export default async function FriendPage() {
           </p>
         )}
 
-        {friendHabits.map((habit) => {
-          const streak = streaksByHabit.get(habit.id);
-          return (
-            <Card key={habit.id}>
-              <CardHeader>
-                <CardTitle className="text-base">
-                  <Link href={`/friend/${habit.id}`} className="hover:underline">
-                    {habit.name}
-                  </Link>
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="flex flex-wrap gap-2">
-                <Badge variant="secondary">{frequencyLabel(habit)}</Badge>
-                <Badge>
-                  {getStreakFlavor(streak?.currentStreak ?? 0)} ·{" "}
-                  {streak?.currentStreak ?? 0} sem.
-                </Badge>
-                <Badge variant="outline">Máx: {streak?.maxStreak ?? 0} sem.</Badge>
-              </CardContent>
-            </Card>
-          );
-        })}
+        <div className="flex flex-col gap-4">
+          {habitDetails.map(
+            ({ habit, completedDates, missedDates, streak, currentSticker }) => (
+              <Card key={habit.id}>
+                <CardHeader className="flex flex-row items-center justify-between">
+                  <CardTitle className="text-lg">{habit.name}</CardTitle>
+                  <StreakPills
+                    current={streak.currentStreak}
+                    max={streak.maxStreak}
+                  />
+                </CardHeader>
+                <CardContent className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                  <div className="md:col-span-2">
+                    <HabitHeatmap
+                      completedDates={completedDates}
+                      missedDates={missedDates}
+                      habitCreatedAt={habit.createdAt.toISOString().slice(0, 10)}
+                      showMonthLabels={false}
+                      showLegend={false}
+                    />
+                  </div>
+                  <ReactionPicker
+                    habitId={habit.id}
+                    weekStart={weekStart}
+                    currentSticker={currentSticker}
+                  />
+                </CardContent>
+              </Card>
+            ),
+          )}
+        </div>
       </div>
     </div>
   );

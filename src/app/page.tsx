@@ -1,15 +1,22 @@
-import { and, eq, inArray } from "drizzle-orm";
-import Link from "next/link";
+import { and, eq, gte, inArray } from "drizzle-orm";
 import { db } from "@/db";
 import { habitEntries, habits } from "@/db/schema";
 import { getCurrentUser } from "@/lib/auth/current-user";
 import { getHabitStreak } from "@/lib/habits/get-habit-streak";
-import { logout } from "@/app/login/actions";
-import { Button } from "@/components/ui/button";
+import { PrimaryHeader } from "@/components/app-header";
+import { ArchivedHabits } from "@/components/habits/archived-habits";
 import { HabitList } from "@/components/habits/habit-list";
+
+const RECENT_WEEKS = 10;
 
 function todayIso() {
   return new Date().toISOString().slice(0, 10);
+}
+
+function daysAgoIso(days: number) {
+  const date = new Date();
+  date.setUTCDate(date.getUTCDate() - days);
+  return date.toISOString().slice(0, 10);
 }
 
 export default async function Home() {
@@ -18,6 +25,11 @@ export default async function Home() {
 
   const activeHabits = await db.query.habits.findMany({
     where: and(eq(habits.userId, user.id), eq(habits.status, "active")),
+    orderBy: (h, { asc }) => [asc(h.createdAt)],
+  });
+
+  const archivedHabits = await db.query.habits.findMany({
+    where: and(eq(habits.userId, user.id), eq(habits.status, "archived")),
     orderBy: (h, { asc }) => [asc(h.createdAt)],
   });
 
@@ -54,41 +66,51 @@ export default async function Home() {
     ]),
   );
 
-  return (
-    <div className="flex min-h-screen flex-col items-center gap-6 p-8">
-      <div className="flex w-full max-w-md items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">HAppbitos</h1>
-          <p className="text-muted-foreground text-sm">Hola, {user.username}.</p>
-        </div>
-        <div className="flex gap-2">
-          <Button
-            variant="secondary"
-            size="sm"
-            render={<Link href="/summary" />}
-          >
-            Resumen semanal
-          </Button>
-          <Button
-            variant="secondary"
-            size="sm"
-            render={<Link href="/friend" />}
-          >
-            Progreso del otro
-          </Button>
-          <form action={logout}>
-            <Button type="submit" variant="outline" size="sm">
-              Salir
-            </Button>
-          </form>
-        </div>
-      </div>
+  const recentSince = daysAgoIso(RECENT_WEEKS * 7);
+  const recentEntries = habitIds.length
+    ? await db.query.habitEntries.findMany({
+        where: and(
+          inArray(habitEntries.habitId, habitIds),
+          gte(habitEntries.date, recentSince),
+        ),
+      })
+    : [];
+  const recentActivityByHabit = new Map<
+    string,
+    { completedDates: Set<string>; missedDates: Set<string> }
+  >();
+  for (const habit of activeHabits) {
+    recentActivityByHabit.set(habit.id, {
+      completedDates: new Set(),
+      missedDates: new Set(),
+    });
+  }
+  for (const entry of recentEntries) {
+    const bucket = recentActivityByHabit.get(entry.habitId);
+    if (!bucket) continue;
+    (entry.completed ? bucket.completedDates : bucket.missedDates).add(
+      entry.date,
+    );
+  }
 
-      <HabitList
-        habits={activeHabits}
-        todayEntries={todayEntries}
-        streaksByHabit={streaksByHabit}
-      />
+  const doneToday = activeHabits.filter(
+    (h) => todayEntries.get(h.id)?.completed,
+  ).length;
+
+  return (
+    <div className="flex min-h-screen flex-col items-center">
+      <PrimaryHeader username={user.username} />
+
+      <div className="flex w-full max-w-4xl flex-col gap-8 p-4 md:p-8">
+        <HabitList
+          habits={activeHabits}
+          todayEntries={todayEntries}
+          streaksByHabit={streaksByHabit}
+          recentActivityByHabit={recentActivityByHabit}
+          doneToday={doneToday}
+        />
+        <ArchivedHabits habits={archivedHabits} />
+      </div>
     </div>
   );
 }
