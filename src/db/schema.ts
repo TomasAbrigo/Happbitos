@@ -90,3 +90,27 @@ export const annotations = pgTable(
   },
   (table) => [unique().on(table.habitId, table.date)],
 );
+
+export const boredomIdeas = pgTable("boredom_ideas", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  createdByUserId: uuid("created_by_user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  text: text("text").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+export const boredomPicks = pgTable("boredom_picks", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  ideaId: uuid("idea_id")
+    .notNull()
+    .references(() => boredomIdeas.id, { onDelete: "cascade" }),
+  userId: uuid("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});

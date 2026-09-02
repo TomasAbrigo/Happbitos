@@ -35,6 +35,14 @@ export function PrimaryHeader({ username }: { username: string }) {
           >
             Progreso del otro
           </Button>
+          <Button
+            size="sm"
+            variant="accent"
+            nativeButton={false}
+            render={<Link href="/ideas" />}
+          >
+            ¿Aburrido?
+          </Button>
           <form action={logout}>
             <Button type="submit" size="sm" variant="ghost">
               Salir
