@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import Link from "next/link";
 import { logout } from "@/app/login/actions";
 import { Button } from "@/components/ui/button";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 export function PrimaryHeader({ username }: { username: string }) {
   return (
@@ -48,6 +49,7 @@ export function PrimaryHeader({ username }: { username: string }) {
               Salir
             </Button>
           </form>
+          <ThemeToggle />
         </nav>
       </div>
     </header>
@@ -72,11 +74,14 @@ export function DetailHeader({
         >
           ← {backLabel}
         </Link>
-        {right ?? (
-          <span className="font-heading text-muted-foreground text-sm font-bold">
-            Happbitos
-          </span>
-        )}
+        <div className="flex items-center gap-3">
+          {right ?? (
+            <span className="font-heading text-muted-foreground text-sm font-bold">
+              Happbitos
+            </span>
+          )}
+          <ThemeToggle />
+        </div>
       </div>
     </header>
   );
