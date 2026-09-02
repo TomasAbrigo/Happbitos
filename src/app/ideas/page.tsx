@@ -61,7 +61,7 @@ export default async function IdeasPage() {
     <div className="flex min-h-screen flex-col items-center">
       <PrimaryHeader username={user.username} />
 
-      <div className="flex w-full max-w-4xl flex-col gap-6 p-4 md:p-8">
+      <div className="flex w-full max-w-6xl flex-col gap-6 p-4 md:p-8">
         <div>
           <h1 className="font-heading text-2xl font-bold">¿Aburrido/a?</h1>
           <p className="text-muted-foreground text-sm">

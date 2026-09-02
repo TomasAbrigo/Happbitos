@@ -7,7 +7,7 @@ import { ThemeToggle } from "@/components/theme-toggle";
 export function PrimaryHeader({ username }: { username: string }) {
   return (
     <header className="bg-card w-full border-b">
-      <div className="mx-auto flex w-full max-w-4xl items-center justify-between px-4 py-4 md:px-8">
+      <div className="mx-auto flex w-full max-w-6xl flex-col gap-2 px-4 py-3 md:flex-row md:items-center md:justify-between md:py-4 md:px-8">
         <div className="flex items-center gap-2">
           <Link href="/" className="font-heading text-lg font-extrabold">
             Happbitos
@@ -16,7 +16,7 @@ export function PrimaryHeader({ username }: { username: string }) {
             | Hola, {username}.
           </span>
         </div>
-        <nav className="flex flex-wrap items-center gap-2">
+        <nav className="[&::-webkit-scrollbar]:hidden -mx-4 flex items-center gap-2 overflow-x-auto px-4 whitespace-nowrap [scrollbar-width:none] md:mx-0 md:flex-wrap md:overflow-visible md:px-0 md:whitespace-normal">
           <Button
             size="sm"
             variant="ghost"
@@ -67,7 +67,7 @@ export function DetailHeader({
 }) {
   return (
     <header className="bg-card w-full border-b">
-      <div className="mx-auto flex w-full max-w-4xl items-center justify-between px-4 py-4 md:px-8">
+      <div className="mx-auto flex w-full max-w-6xl items-center justify-between px-4 py-4 md:px-8">
         <Link
           href={backHref}
           className="flex items-center gap-1.5 text-sm font-medium hover:underline"

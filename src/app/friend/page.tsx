@@ -87,7 +87,7 @@ export default async function FriendPage() {
         }
       />
 
-      <div className="flex w-full max-w-4xl flex-col gap-4 p-4 md:p-8">
+      <div className="flex w-full max-w-6xl flex-col gap-4 p-4 md:p-8">
         <div>
           <h1 className="font-heading text-3xl font-bold">
             Progreso de {friend.username}
@@ -108,8 +108,10 @@ export default async function FriendPage() {
           {habitDetails.map(
             ({ habit, completedDates, missedDates, streak, currentSticker }) => (
               <Card key={habit.id}>
-                <CardHeader className="flex flex-row items-center justify-between">
-                  <CardTitle className="text-lg">{habit.name}</CardTitle>
+                <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-2">
+                  <CardTitle className="min-w-0 text-lg break-words">
+                    {habit.name}
+                  </CardTitle>
                   <StreakPills
                     current={streak.currentStreak}
                     max={streak.maxStreak}
