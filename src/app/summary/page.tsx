@@ -1,11 +1,14 @@
+import { TrendingDown, TrendingUp } from "lucide-react";
 import { getCurrentUser } from "@/lib/auth/current-user";
 import { getOtherUser } from "@/lib/auth/other-user";
 import { getWeeklySummaryForUser } from "@/lib/habits/get-weekly-summary";
+import { getTrendsForUser } from "@/lib/habits/get-trends";
+import type { MonthComparison, WeekdayTrend } from "@/lib/habits/trends";
 import type { HabitWeekSummary } from "@/lib/habits/weekly-summary";
 import { getCompletionQuip } from "@/lib/habits/streak-flavor";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PrimaryHeader } from "@/components/app-header";
 
 function barColor(rate: number) {
@@ -109,15 +112,74 @@ function SummaryCard({
   );
 }
 
+function TrendsCard({
+  bestWeekday,
+  monthComparison,
+}: {
+  bestWeekday: WeekdayTrend | null;
+  monthComparison: MonthComparison;
+}) {
+  const hasMonthData = monthComparison.lastMonthSample > 0;
+  const improving = monthComparison.delta >= 0;
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-lg">Tendencias</CardTitle>
+      </CardHeader>
+      <CardContent className="flex flex-col gap-4">
+        <div className="flex flex-col gap-1">
+          <span className="text-muted-foreground text-xs">Tu mejor día</span>
+          {bestWeekday ? (
+            <span className="text-sm font-semibold">
+              {bestWeekday.label} · {Math.round(bestWeekday.rate * 100)}% de
+              cumplimiento
+            </span>
+          ) : (
+            <span className="text-muted-foreground text-sm">
+              Todavía no hay suficientes datos para saberlo.
+            </span>
+          )}
+        </div>
+
+        <div className="flex flex-col gap-1">
+          <span className="text-muted-foreground text-xs">
+            Este mes vs. el anterior
+          </span>
+          {hasMonthData ? (
+            <span
+              className={`flex items-center gap-1.5 text-sm font-semibold ${improving ? "text-success" : "text-destructive"}`}
+            >
+              {improving ? (
+                <TrendingUp className="size-4" />
+              ) : (
+                <TrendingDown className="size-4" />
+              )}
+              {Math.round(monthComparison.thisMonthRate * 100)}% vs.{" "}
+              {Math.round(monthComparison.lastMonthRate * 100)}% el mes pasado
+            </span>
+          ) : (
+            <span className="text-sm font-semibold">
+              {Math.round(monthComparison.thisMonthRate * 100)}% este mes ·
+              sin datos del mes pasado para comparar
+            </span>
+          )}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 export default async function SummaryPage() {
   const user = await getCurrentUser();
   if (!user) return null;
 
   const friend = await getOtherUser(user.id);
 
-  const [mySummary, friendSummary] = await Promise.all([
+  const [mySummary, friendSummary, trends] = await Promise.all([
     getWeeklySummaryForUser(user.id),
     friend ? getWeeklySummaryForUser(friend.id) : Promise.resolve([]),
+    getTrendsForUser(user.id),
   ]);
 
   return (
@@ -149,6 +211,11 @@ export default async function SummaryPage() {
             />
           )}
         </div>
+
+        <TrendsCard
+          bestWeekday={trends.bestWeekday}
+          monthComparison={trends.monthComparison}
+        />
       </div>
     </div>
   );

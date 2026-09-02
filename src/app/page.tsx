@@ -1,6 +1,6 @@
 import { and, eq, gte, inArray } from "drizzle-orm";
 import { db } from "@/db";
-import { habitEntries, habits } from "@/db/schema";
+import { habitEntries, habits, reactions } from "@/db/schema";
 import { getCurrentUser } from "@/lib/auth/current-user";
 import { getHabitStreak } from "@/lib/habits/get-habit-streak";
 import { PrimaryHeader } from "@/components/app-header";
@@ -16,6 +16,14 @@ function todayIso() {
 function daysAgoIso(days: number) {
   const date = new Date();
   date.setUTCDate(date.getUTCDate() - days);
+  return date.toISOString().slice(0, 10);
+}
+
+function currentWeekStartIso() {
+  const date = new Date();
+  const dayOfWeek = date.getUTCDay();
+  const diffToMonday = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+  date.setUTCDate(date.getUTCDate() + diffToMonday);
   return date.toISOString().slice(0, 10);
 }
 
@@ -97,6 +105,23 @@ export default async function Home() {
     (h) => todayEntries.get(h.id)?.completed,
   ).length;
 
+  const weekReactions = habitIds.length
+    ? await db.query.reactions.findMany({
+        where: and(
+          inArray(reactions.habitId, habitIds),
+          eq(reactions.weekStart, currentWeekStartIso()),
+        ),
+      })
+    : [];
+  const habitNameById = new Map(activeHabits.map((h) => [h.id, h.name]));
+  const reactedHabitNames = [
+    ...new Set(
+      weekReactions
+        .map((r) => habitNameById.get(r.habitId))
+        .filter((name): name is string => Boolean(name)),
+    ),
+  ];
+
   return (
     <div className="flex min-h-screen flex-col items-center">
       <PrimaryHeader username={user.username} />
@@ -108,6 +133,8 @@ export default async function Home() {
           streaksByHabit={streaksByHabit}
           recentActivityByHabit={recentActivityByHabit}
           doneToday={doneToday}
+          reactionCount={weekReactions.length}
+          reactedHabitNames={reactedHabitNames}
         />
         <ArchivedHabits habits={archivedHabits} />
       </div>
