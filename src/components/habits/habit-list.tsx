@@ -5,9 +5,12 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { archiveHabit, createHabit, updateHabit } from "@/app/habits/actions";
 import type { habitEntries, habits } from "@/db/schema";
+import { toIsoDateInTz } from "@/lib/date";
 import type { StreakResult } from "@/lib/habits/streak";
 import { getTodayProgressQuip } from "@/lib/habits/streak-flavor";
+import { habitColorClass } from "@/lib/habits/appearance";
 import { EveningReminder } from "./evening-reminder";
+import { FreezeButton } from "./freeze-button";
 import { HabitCheckin } from "./habit-checkin";
 import { HabitDialog } from "./habit-dialog";
 import { HabitHeatmap } from "./habit-heatmap";
@@ -83,6 +86,7 @@ export function HabitList({
   doneToday,
   reactionCount,
   reactedHabitNames,
+  freezeQuotaRemaining,
 }: {
   habits: Habit[];
   todayEntries: Map<string, HabitEntry>;
@@ -91,6 +95,7 @@ export function HabitList({
   doneToday: number;
   reactionCount: number;
   reactedHabitNames: string[];
+  freezeQuotaRemaining: number;
 }) {
   return (
     <div className="flex w-full flex-col gap-4">
@@ -152,7 +157,15 @@ export function HabitList({
                   href={`/habits/${habit.id}`}
                   className="min-w-0 flex-1 hover:underline"
                 >
-                  <CardTitle className="text-base">{habit.name}</CardTitle>
+                  <CardTitle className="flex items-center gap-2 text-base">
+                    {habit.color && (
+                      <span
+                        className={`size-2.5 shrink-0 rounded-full ${habitColorClass(habit.color)}`}
+                      />
+                    )}
+                    {habit.icon && <span className="shrink-0">{habit.icon}</span>}
+                    <span className="truncate">{habit.name}</span>
+                  </CardTitle>
                 </Link>
                 <div className="flex shrink-0 items-center gap-3">
                   <HabitDialog
@@ -165,6 +178,8 @@ export function HabitList({
                       target: habit.target,
                       frequencyKind: habit.frequencyKind,
                       timesPerWeek: habit.timesPerWeek,
+                      icon: habit.icon,
+                      color: habit.color,
                     }}
                     trigger={
                       <button
@@ -201,6 +216,11 @@ export function HabitList({
                   />
                 </StreakCelebration>
 
+                <FreezeButton
+                  habitId={habit.id}
+                  quotaRemaining={freezeQuotaRemaining}
+                />
+
                 <Link
                   href={`/habits/${habit.id}`}
                   className="-mx-1 rounded-lg px-1 py-0.5 hover:bg-muted/60"
@@ -209,7 +229,7 @@ export function HabitList({
                   <HabitHeatmap
                     completedDates={activity.completedDates}
                     missedDates={activity.missedDates}
-                    habitCreatedAt={habit.createdAt.toISOString().slice(0, 10)}
+                    habitCreatedAt={toIsoDateInTz(habit.createdAt)}
                     weeks={10}
                     showMonthLabels={false}
                     showLegend={false}

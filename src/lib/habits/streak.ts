@@ -8,6 +8,7 @@ export type StreakInput = {
   completedDates: string[];
   today: string;
   archivedAt?: string | null;
+  frozenWeeks?: string[];
 };
 
 export type StreakResult = {
@@ -58,7 +59,8 @@ function targetForWeek(
 }
 
 export function calculateStreak(input: StreakInput): StreakResult {
-  const { frequencyHistory, completedDates, today, archivedAt } = input;
+  const { frequencyHistory, completedDates, today, archivedAt, frozenWeeks = [] } = input;
+  const frozen = new Set(frozenWeeks);
 
   if (frequencyHistory.length === 0) {
     return { currentStreak: 0, maxStreak: 0 };
@@ -88,7 +90,7 @@ export function calculateStreak(input: StreakInput): StreakResult {
   ) {
     const completedCount = completedByWeek.get(weekStart) ?? 0;
     const target = targetForWeek(weekStart, frequencyHistory);
-    const met = completedCount >= target;
+    const met = completedCount >= target || frozen.has(weekStart);
     const isCurrentPartial = weekStart === cutoffWeekStart && cutoff < cutoffWeekEnd;
 
     if (isCurrentPartial) {

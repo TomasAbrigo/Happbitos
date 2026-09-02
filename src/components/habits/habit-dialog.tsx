@@ -9,7 +9,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { HabitForm } from "./habit-form";
+import { HabitForm, type HabitFormDefaultValues } from "./habit-form";
 import type { HabitFormState } from "@/app/habits/actions";
 
 type HabitDialogProps = {
@@ -20,13 +20,7 @@ type HabitDialogProps = {
     state: HabitFormState,
     formData: FormData,
   ) => Promise<HabitFormState>;
-  defaultValues?: {
-    name: string;
-    type: "binary" | "quantity";
-    target: number | null;
-    frequencyKind: "daily" | "n_per_week";
-    timesPerWeek: number | null;
-  };
+  defaultValues?: HabitFormDefaultValues;
   submitLabel: string;
 };
 

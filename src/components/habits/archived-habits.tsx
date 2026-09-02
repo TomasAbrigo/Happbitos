@@ -71,7 +71,8 @@ export function ArchivedHabits({ habits: items }: { habits: Habit[] }) {
             key={habit.id}
             className="bg-card ring-foreground/10 flex items-center justify-between rounded-xl px-4 py-3 text-sm ring-1"
           >
-            <span className="text-muted-foreground font-medium">
+            <span className="text-muted-foreground flex items-center gap-1.5 font-medium">
+              {habit.icon && <span>{habit.icon}</span>}
               {habit.name}
             </span>
             <div className="flex items-center gap-3">

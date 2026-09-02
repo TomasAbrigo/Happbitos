@@ -2,10 +2,14 @@ import { and, eq } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import { db } from "@/db";
 import { annotations, habitEntries, habits, reactions } from "@/db/schema";
+import { toIsoDateInTz, todayIso } from "@/lib/date";
 import { getCurrentUser } from "@/lib/auth/current-user";
 import { getHabitStreak } from "@/lib/habits/get-habit-streak";
+import { getFreezeQuotaRemaining, getFrozenWeeksByHabit } from "@/lib/habits/get-freezes";
+import { habitColorClass } from "@/lib/habits/appearance";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DetailHeader } from "@/components/app-header";
+import { FreezeButton } from "@/components/habits/freeze-button";
 import { HabitAnnotations } from "@/components/habits/habit-annotations";
 import {
   HabitHeatmap,
@@ -77,8 +81,14 @@ export default async function HabitDetailPage({
     entries.filter((e) => !e.completed).map((e) => e.date),
   );
 
-  const streak = getHabitStreak(habit, [...completedDates]);
-  const habitCreatedAt = habit.createdAt.toISOString().slice(0, 10);
+  const frozenWeeksByHabit = await getFrozenWeeksByHabit([habit.id]);
+  const streak = getHabitStreak(
+    habit,
+    [...completedDates],
+    frozenWeeksByHabit.get(habit.id) ?? [],
+  );
+  const freezeQuotaRemaining = await getFreezeQuotaRemaining(user.id);
+  const habitCreatedAt = toIsoDateInTz(habit.createdAt);
   const completionRate = habitCompletionRate(completedDates, missedDates);
 
   const habitAnnotations = await db.query.annotations.findMany({
@@ -87,9 +97,17 @@ export default async function HabitDetailPage({
   const annotationByDate = new Map(
     habitAnnotations.map((a) => [a.date, a.text]),
   );
-  const missedDatesWithNotes = [...missedDates]
+  const today = todayIso();
+  const notableDates = new Set(missedDates);
+  if (today >= habitCreatedAt) notableDates.add(today);
+
+  const daysWithNotes = [...notableDates]
     .sort((a, b) => (a < b ? 1 : -1))
-    .map((date) => ({ date, text: annotationByDate.get(date) ?? null }));
+    .map((date) => ({
+      date,
+      text: annotationByDate.get(date) ?? null,
+      completed: completedDates.has(date),
+    }));
 
   const receivedReactions = await db.query.reactions.findMany({
     where: eq(reactions.habitId, habit.id),
@@ -107,16 +125,25 @@ export default async function HabitDetailPage({
       <div className="flex w-full max-w-6xl flex-col gap-4 p-4 md:p-8">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="min-w-0">
-            <h1 className="font-heading text-2xl font-bold break-words md:text-3xl">
+            <h1 className="font-heading flex items-center gap-2 text-2xl font-bold break-words md:text-3xl">
+              {habit.color && (
+                <span
+                  className={`size-3 shrink-0 rounded-full ${habitColorClass(habit.color)}`}
+                />
+              )}
+              {habit.icon && <span>{habit.icon}</span>}
               {habit.name}
             </h1>
             <p className="text-muted-foreground text-sm">
               {typeLabel(habit)} · {frequencyLabel(habit)}
             </p>
           </div>
-          <StreakCelebration habitId={habit.id} currentStreak={streak.currentStreak}>
-            <StreakPills current={streak.currentStreak} max={streak.maxStreak} />
-          </StreakCelebration>
+          <div className="flex flex-col items-end gap-1.5">
+            <StreakCelebration habitId={habit.id} currentStreak={streak.currentStreak}>
+              <StreakPills current={streak.currentStreak} max={streak.maxStreak} />
+            </StreakCelebration>
+            <FreezeButton habitId={habit.id} quotaRemaining={freezeQuotaRemaining} />
+          </div>
         </div>
 
         <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
@@ -177,13 +204,14 @@ export default async function HabitDetailPage({
 
             <Card>
               <CardHeader>
-                <CardTitle className="text-lg">Días no cumplidos</CardTitle>
+                <CardTitle className="text-lg">Notas</CardTitle>
+                <p className="text-muted-foreground text-sm">
+                  Hoy y los días no cumplidos, por si querés dejar algo
+                  anotado.
+                </p>
               </CardHeader>
               <CardContent>
-                <HabitAnnotations
-                  habitId={habit.id}
-                  missedDates={missedDatesWithNotes}
-                />
+                <HabitAnnotations habitId={habit.id} days={daysWithNotes} />
               </CardContent>
             </Card>
           </div>

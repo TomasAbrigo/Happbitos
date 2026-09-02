@@ -4,16 +4,13 @@ import { Check } from "lucide-react";
 import { useActionState, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { todayIso } from "@/lib/date";
 import {
   logHabitEntry,
   type EntryFormState,
 } from "@/app/habits/entries-actions";
 
 const initialState: EntryFormState = { error: null };
-
-function todayIso() {
-  return new Date().toISOString().slice(0, 10);
-}
 
 export function HabitCheckin({
   habitId,

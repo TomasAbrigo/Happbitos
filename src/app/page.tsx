@@ -1,9 +1,12 @@
 import { and, eq, gte, inArray } from "drizzle-orm";
 import { db } from "@/db";
 import { habitEntries, habits, reactions } from "@/db/schema";
+import { addDaysIso, currentWeekStartIso, todayIso } from "@/lib/date";
 import { getCurrentUser } from "@/lib/auth/current-user";
 import { getOtherUser } from "@/lib/auth/other-user";
 import { getHabitStreak } from "@/lib/habits/get-habit-streak";
+import { getFreezeQuotaRemaining, getFrozenWeeksByHabit } from "@/lib/habits/get-freezes";
+import { getTeamStreak } from "@/lib/habits/get-team-streak";
 import { getAchievementsForUser } from "@/lib/achievements/get-achievements";
 import { PrimaryHeader } from "@/components/app-header";
 import { AchievementsWidget } from "@/components/dashboard/achievements-widget";
@@ -13,22 +16,8 @@ import { HabitList } from "@/components/habits/habit-list";
 
 const RECENT_WEEKS = 10;
 
-function todayIso() {
-  return new Date().toISOString().slice(0, 10);
-}
-
 function daysAgoIso(days: number) {
-  const date = new Date();
-  date.setUTCDate(date.getUTCDate() - days);
-  return date.toISOString().slice(0, 10);
-}
-
-function currentWeekStartIso() {
-  const date = new Date();
-  const dayOfWeek = date.getUTCDay();
-  const diffToMonday = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
-  date.setUTCDate(date.getUTCDate() + diffToMonday);
-  return date.toISOString().slice(0, 10);
+  return addDaysIso(todayIso(), -days);
 }
 
 export default async function Home() {
@@ -71,12 +60,18 @@ export default async function Home() {
     list.push(entry.date);
     completedDatesByHabit.set(entry.habitId, list);
   }
+  const frozenWeeksByHabit = await getFrozenWeeksByHabit(habitIds);
   const streaksByHabit = new Map(
     activeHabits.map((habit) => [
       habit.id,
-      getHabitStreak(habit, completedDatesByHabit.get(habit.id) ?? []),
+      getHabitStreak(
+        habit,
+        completedDatesByHabit.get(habit.id) ?? [],
+        frozenWeeksByHabit.get(habit.id) ?? [],
+      ),
     ]),
   );
+  const freezeQuotaRemaining = await getFreezeQuotaRemaining(user.id);
 
   const recentSince = daysAgoIso(RECENT_WEEKS * 7);
   const recentEntries = habitIds.length
@@ -128,7 +123,9 @@ export default async function Home() {
 
   const friend = await getOtherUser(user.id);
   let friendPulse = null;
+  let teamStreak = undefined;
   if (friend) {
+    teamStreak = await getTeamStreak(user.id, friend.id);
     const friendActiveHabits = await db.query.habits.findMany({
       where: and(eq(habits.userId, friend.id), eq(habits.status, "active")),
     });
@@ -165,6 +162,7 @@ export default async function Home() {
             doneToday={doneToday}
             reactionCount={weekReactions.length}
             reactedHabitNames={reactedHabitNames}
+            freezeQuotaRemaining={freezeQuotaRemaining}
           />
           <ArchivedHabits habits={archivedHabits} />
         </div>
@@ -173,6 +171,7 @@ export default async function Home() {
           <TeamPulseWidget
             me={{ username: user.username, done: doneToday, total: activeHabits.length }}
             friend={friendPulse}
+            teamStreak={teamStreak}
           />
           <AchievementsWidget achievements={achievements} />
         </aside>

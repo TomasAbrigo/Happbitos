@@ -1,3 +1,5 @@
+import { todayIso } from "@/lib/date";
+
 type DayStatus = "completed" | "missed" | "none";
 
 function toIsoDate(date: Date): string {
@@ -39,7 +41,7 @@ export function HabitHeatmap({
   showMonthLabels?: boolean;
   showLegend?: boolean;
 }) {
-  const today = new Date();
+  const today = new Date(`${todayIso()}T00:00:00.000Z`);
   const currentWeekStart = getWeekStart(today);
   const startWeek = new Date(currentWeekStart);
   startWeek.setUTCDate(startWeek.getUTCDate() - (weeks - 1) * 7);

@@ -1,22 +1,12 @@
 import { eq, inArray } from "drizzle-orm";
 import { db } from "@/db";
 import { habitEntries, habits } from "@/db/schema";
+import { currentWeekStartIso, toIsoDateInTz, todayIso } from "@/lib/date";
+import { getFrozenWeeksByHabit } from "./get-freezes";
 import {
   generateWeeklySummary,
   type HabitWeekSummary,
 } from "./weekly-summary";
-
-function toIsoDate(date: Date): string {
-  return date.toISOString().slice(0, 10);
-}
-
-function currentWeekStart(): string {
-  const date = new Date();
-  const dayOfWeek = date.getUTCDay();
-  const diffToMonday = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
-  date.setUTCDate(date.getUTCDate() + diffToMonday);
-  return toIsoDate(date);
-}
 
 export async function getWeeklySummaryForUser(
   userId: string,
@@ -39,9 +29,11 @@ export async function getWeeklySummaryForUser(
     completedByHabit.set(entry.habitId, list);
   }
 
+  const frozenWeeksByHabit = await getFrozenWeeksByHabit(habitIds);
+
   return generateWeeklySummary({
-    weekStart: currentWeekStart(),
-    today: toIsoDate(new Date()),
+    weekStart: currentWeekStartIso(),
+    today: todayIso(),
     habits: userHabits.map((habit) => {
       const timesPerWeek =
         habit.frequencyKind === "daily" ? 7 : (habit.timesPerWeek ?? 1);
@@ -49,10 +41,11 @@ export async function getWeeklySummaryForUser(
         habitId: habit.id,
         name: habit.name,
         frequencyHistory: [
-          { effectiveFrom: toIsoDate(habit.createdAt), timesPerWeek },
+          { effectiveFrom: toIsoDateInTz(habit.createdAt), timesPerWeek },
         ],
         completedDates: completedByHabit.get(habit.id) ?? [],
-        archivedAt: habit.archivedAt ? toIsoDate(habit.archivedAt) : null,
+        archivedAt: habit.archivedAt ? toIsoDateInTz(habit.archivedAt) : null,
+        frozenWeeks: frozenWeeksByHabit.get(habit.id) ?? [],
       };
     }),
   });

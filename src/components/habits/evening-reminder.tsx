@@ -2,11 +2,12 @@
 
 import { X } from "lucide-react";
 import { useEffect, useState } from "react";
+import { todayIso } from "@/lib/date";
 
 const REMINDER_HOUR = 20;
 
 function dismissedKey() {
-  return `happbitos-evening-dismissed:${new Date().toISOString().slice(0, 10)}`;
+  return `happbitos-evening-dismissed:${todayIso()}`;
 }
 
 export function EveningReminder({

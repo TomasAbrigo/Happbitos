@@ -27,10 +27,12 @@ function AnnotationRow({
   habitId,
   date,
   text,
+  completed,
 }: {
   habitId: string;
   date: string;
   text: string | null;
+  completed: boolean;
 }) {
   const action = setAnnotation.bind(null, habitId, date);
   const [state, formAction, pending] = useActionState(action, initialState);
@@ -40,9 +42,12 @@ function AnnotationRow({
     return (
       <div className="flex items-center justify-between gap-2 border-b py-2 last:border-b-0">
         <div>
-          <p className="text-sm font-medium">{formatDate(date)}</p>
+          <p className="text-sm font-medium">
+            {completed ? "✅ " : ""}
+            {formatDate(date)}
+          </p>
           <p className="text-muted-foreground text-xs">
-            {text ?? getMissedDayQuip(date)}
+            {text ?? (completed ? "Sin nota" : getMissedDayQuip(date))}
           </p>
         </div>
         <button
@@ -66,7 +71,9 @@ function AnnotationRow({
         <Input
           name="text"
           defaultValue={text ?? ""}
-          placeholder="¿Cuál es la excusa?"
+          placeholder={
+            completed ? "Contá algo de este día (opcional)" : "¿Cuál es la excusa?"
+          }
           className="h-9"
           autoFocus
         />
@@ -83,23 +90,29 @@ function AnnotationRow({
 
 export function HabitAnnotations({
   habitId,
-  missedDates,
+  days,
 }: {
   habitId: string;
-  missedDates: { date: string; text: string | null }[];
+  days: { date: string; text: string | null; completed: boolean }[];
 }) {
-  if (missedDates.length === 0) {
+  if (days.length === 0) {
     return (
       <p className="text-muted-foreground text-sm">
-        Impecable. Ni un día no cumplido para anotar.
+        Todavía no hay nada para anotar acá.
       </p>
     );
   }
 
   return (
     <div className="flex flex-col">
-      {missedDates.map(({ date, text }) => (
-        <AnnotationRow key={date} habitId={habitId} date={date} text={text} />
+      {days.map(({ date, text, completed }) => (
+        <AnnotationRow
+          key={date}
+          habitId={habitId}
+          date={date}
+          text={text}
+          completed={completed}
+        />
       ))}
     </div>
   );

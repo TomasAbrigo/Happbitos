@@ -1,16 +1,13 @@
 import { eq, inArray } from "drizzle-orm";
 import { db } from "@/db";
 import { habitEntries, habits } from "@/db/schema";
+import { todayIso } from "@/lib/date";
 import {
   computeBestWeekday,
   computeMonthComparison,
   type MonthComparison,
   type WeekdayTrend,
 } from "./trends";
-
-function toIsoDate(date: Date): string {
-  return date.toISOString().slice(0, 10);
-}
 
 export async function getTrendsForUser(userId: string): Promise<{
   bestWeekday: WeekdayTrend | null;
@@ -20,7 +17,7 @@ export async function getTrendsForUser(userId: string): Promise<{
     where: eq(habits.userId, userId),
   });
 
-  const today = toIsoDate(new Date());
+  const today = todayIso();
   if (userHabits.length === 0) {
     return {
       bestWeekday: null,

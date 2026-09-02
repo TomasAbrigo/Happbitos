@@ -1,4 +1,5 @@
 import { TrendingDown, TrendingUp } from "lucide-react";
+import { currentWeekStartIso } from "@/lib/date";
 import { getCurrentUser } from "@/lib/auth/current-user";
 import { getOtherUser } from "@/lib/auth/other-user";
 import { getWeeklySummaryForUser } from "@/lib/habits/get-weekly-summary";
@@ -25,11 +26,7 @@ function overallRate(items: HabitWeekSummary[]) {
 }
 
 function currentWeekRange(): { start: Date; end: Date } {
-  const date = new Date();
-  const dayOfWeek = date.getUTCDay();
-  const diffToMonday = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
-  const start = new Date(date);
-  start.setUTCDate(start.getUTCDate() + diffToMonday);
+  const start = new Date(`${currentWeekStartIso()}T00:00:00.000Z`);
   const end = new Date(start);
   end.setUTCDate(end.getUTCDate() + 6);
   return { start, end };

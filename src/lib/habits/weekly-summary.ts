@@ -6,6 +6,7 @@ export type HabitSummaryInput = {
   frequencyHistory: FrequencyPeriod[];
   completedDates: string[];
   archivedAt?: string | null;
+  frozenWeeks?: string[];
 };
 
 export type HabitWeekSummary = {
@@ -56,6 +57,7 @@ export function generateWeeklySummary(
       completedDates: habit.completedDates,
       today,
       archivedAt: habit.archivedAt,
+      frozenWeeks: habit.frozenWeeks,
     });
 
     return {

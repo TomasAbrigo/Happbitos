@@ -1,11 +1,16 @@
 import { eq, inArray, or } from "drizzle-orm";
 import { db } from "@/db";
 import { boredomPicks, habits, reactions } from "@/db/schema";
+import { startOfDayInTz, toIsoDateInTz, todayIso } from "@/lib/date";
 import { getHabitStreak } from "@/lib/habits/get-habit-streak";
+import { getFrozenWeeksByHabit } from "@/lib/habits/get-freezes";
 import { computeAchievements, type Achievement } from "./achievements";
 
 function daysSince(date: Date): number {
-  return Math.floor((Date.now() - date.getTime()) / (24 * 60 * 60 * 1000));
+  const diffMs =
+    startOfDayInTz(todayIso()).getTime() -
+    startOfDayInTz(toIsoDateInTz(date)).getTime();
+  return Math.floor(diffMs / (24 * 60 * 60 * 1000));
 }
 
 export async function getAchievementsForUser(
@@ -32,8 +37,13 @@ export async function getAchievementsForUser(
     completedDatesByHabit.set(entry.habitId, list);
   }
 
+  const frozenWeeksByHabit = await getFrozenWeeksByHabit(habitIds);
   const bestStreakEver = userHabits.reduce((max, habit) => {
-    const streak = getHabitStreak(habit, completedDatesByHabit.get(habit.id) ?? []);
+    const streak = getHabitStreak(
+      habit,
+      completedDatesByHabit.get(habit.id) ?? [],
+      frozenWeeksByHabit.get(habit.id) ?? [],
+    );
     return Math.max(max, streak.maxStreak);
   }, 0);
 

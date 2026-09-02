@@ -163,4 +163,54 @@ describe("calculateStreak", () => {
 
     expect(result).toEqual({ currentStreak: 1, maxStreak: 1 });
   });
+
+  it("keeps the streak alive when a missed week is frozen", () => {
+    const result = calculateStreak({
+      frequencyHistory: [{ effectiveFrom: "2025-12-01", timesPerWeek: 7 }],
+      completedDates: [
+        // Week of 2025-12-22: met
+        "2025-12-22",
+        "2025-12-23",
+        "2025-12-24",
+        "2025-12-25",
+        "2025-12-26",
+        "2025-12-27",
+        "2025-12-28",
+        // Week of 2025-12-29: NOT met, but frozen
+        // Week of 2026-01-05: met
+        "2026-01-05",
+        "2026-01-06",
+        "2026-01-07",
+        "2026-01-08",
+        "2026-01-09",
+        "2026-01-10",
+        "2026-01-11",
+      ],
+      today: "2026-01-11",
+      archivedAt: "2026-01-11",
+      frozenWeeks: ["2025-12-29"],
+    });
+
+    expect(result).toEqual({ currentStreak: 3, maxStreak: 3 });
+  });
+
+  it("does not freeze a week that was not listed as frozen", () => {
+    const result = calculateStreak({
+      frequencyHistory: [{ effectiveFrom: "2025-12-01", timesPerWeek: 7 }],
+      completedDates: [
+        "2025-12-22",
+        "2025-12-23",
+        "2025-12-24",
+        "2025-12-25",
+        "2025-12-26",
+        "2025-12-27",
+        "2025-12-28",
+      ],
+      today: "2026-01-11",
+      archivedAt: "2026-01-11",
+      frozenWeeks: ["2026-02-02"],
+    });
+
+    expect(result).toEqual({ currentStreak: 0, maxStreak: 1 });
+  });
 });

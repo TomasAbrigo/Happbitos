@@ -3,22 +3,17 @@ import { Eye } from "lucide-react";
 import Link from "next/link";
 import { db } from "@/db";
 import { habits, reactions } from "@/db/schema";
+import { currentWeekStartIso, toIsoDateInTz } from "@/lib/date";
 import { getCurrentUser } from "@/lib/auth/current-user";
 import { getOtherUser } from "@/lib/auth/other-user";
 import { getHabitStreak } from "@/lib/habits/get-habit-streak";
+import { getFrozenWeeksByHabit } from "@/lib/habits/get-freezes";
+import { habitColorClass } from "@/lib/habits/appearance";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DetailHeader } from "@/components/app-header";
 import { HabitHeatmap } from "@/components/habits/habit-heatmap";
 import { StreakPills } from "@/components/habits/streak-pills";
 import { ReactionPicker } from "@/components/reactions/reaction-picker";
-
-function currentWeekStart(): string {
-  const date = new Date();
-  const dayOfWeek = date.getUTCDay();
-  const diffToMonday = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
-  date.setUTCDate(date.getUTCDate() + diffToMonday);
-  return date.toISOString().slice(0, 10);
-}
 
 export default async function FriendPage() {
   const user = await getCurrentUser();
@@ -43,7 +38,7 @@ export default async function FriendPage() {
     orderBy: (h, { asc }) => [asc(h.createdAt)],
   });
 
-  const weekStart = currentWeekStart();
+  const weekStart = currentWeekStartIso();
 
   const habitDetails = await Promise.all(
     friendHabits.map(async (habit) => {
@@ -56,7 +51,12 @@ export default async function FriendPage() {
       const missedDates = new Set(
         entries.filter((e) => !e.completed).map((e) => e.date),
       );
-      const streak = getHabitStreak(habit, [...completedDates]);
+      const frozenWeeks = await getFrozenWeeksByHabit([habit.id]);
+      const streak = getHabitStreak(
+        habit,
+        [...completedDates],
+        frozenWeeks.get(habit.id) ?? [],
+      );
       const myReactionThisWeek = await db.query.reactions.findFirst({
         where: and(
           eq(reactions.habitId, habit.id),
@@ -109,7 +109,13 @@ export default async function FriendPage() {
             ({ habit, completedDates, missedDates, streak, currentSticker }) => (
               <Card key={habit.id}>
                 <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-2">
-                  <CardTitle className="min-w-0 text-lg break-words">
+                  <CardTitle className="flex min-w-0 items-center gap-2 text-lg break-words">
+                    {habit.color && (
+                      <span
+                        className={`size-2.5 shrink-0 rounded-full ${habitColorClass(habit.color)}`}
+                      />
+                    )}
+                    {habit.icon && <span className="shrink-0">{habit.icon}</span>}
                     {habit.name}
                   </CardTitle>
                   <StreakPills
@@ -122,7 +128,7 @@ export default async function FriendPage() {
                     <HabitHeatmap
                       completedDates={completedDates}
                       missedDates={missedDates}
-                      habitCreatedAt={habit.createdAt.toISOString().slice(0, 10)}
+                      habitCreatedAt={toIsoDateInTz(habit.createdAt)}
                       showMonthLabels={false}
                       showLegend={false}
                     />

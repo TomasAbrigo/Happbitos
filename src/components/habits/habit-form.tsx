@@ -4,17 +4,24 @@ import { useActionState, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { HABIT_COLORS, HABIT_ICONS } from "@/lib/habits/appearance";
+import { HABIT_TEMPLATES } from "@/lib/habits/templates";
+import { cn } from "@/lib/utils";
 import type { HabitFormState } from "@/app/habits/actions";
+
+export type HabitFormDefaultValues = {
+  name: string;
+  type: "binary" | "quantity";
+  target: number | null;
+  frequencyKind: "daily" | "n_per_week";
+  timesPerWeek: number | null;
+  icon?: string | null;
+  color?: string | null;
+};
 
 type HabitFormProps = {
   action: (state: HabitFormState, formData: FormData) => Promise<HabitFormState>;
-  defaultValues?: {
-    name: string;
-    type: "binary" | "quantity";
-    target: number | null;
-    frequencyKind: "daily" | "n_per_week";
-    timesPerWeek: number | null;
-  };
+  defaultValues?: HabitFormDefaultValues;
   submitLabel: string;
   onSuccess?: () => void;
 };
@@ -31,6 +38,9 @@ export function HabitForm({
   const [frequencyKind, setFrequencyKind] = useState(
     defaultValues?.frequencyKind ?? "daily",
   );
+  const [icon, setIcon] = useState(defaultValues?.icon ?? "");
+  const [color, setColor] = useState(defaultValues?.color ?? "");
+  const [name, setName] = useState(defaultValues?.name ?? "");
 
   async function wrappedAction(state: HabitFormState, formData: FormData) {
     const result = await action(state, formData);
@@ -45,14 +55,105 @@ export function HabitForm({
 
   return (
     <form action={formAction} className="flex flex-col gap-4">
+      {!defaultValues && (
+        <div className="flex flex-col gap-2">
+          <Label>Ideas rápidas</Label>
+          <div className="flex flex-wrap gap-1.5">
+            {HABIT_TEMPLATES.map((template) => (
+              <button
+                key={template.name}
+                type="button"
+                onClick={() => {
+                  setName(template.name);
+                  setIcon(template.icon);
+                }}
+                className="bg-muted/50 hover:bg-muted inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium"
+              >
+                <span>{template.icon}</span>
+                {template.name}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       <div className="flex flex-col gap-2">
         <Label htmlFor="name">Nombre</Label>
         <Input
           id="name"
           name="name"
           required
-          defaultValue={defaultValues?.name}
+          value={name}
+          onChange={(e) => setName(e.target.value)}
         />
+      </div>
+
+      <div className="flex flex-col gap-2">
+        <Label>Ícono</Label>
+        <input type="hidden" name="icon" value={icon} />
+        <div className="flex flex-wrap gap-1.5">
+          <button
+            type="button"
+            onClick={() => setIcon("")}
+            className={cn(
+              "flex size-9 items-center justify-center rounded-lg border text-sm",
+              icon === ""
+                ? "border-ring bg-muted"
+                : "border-transparent bg-muted/50 hover:bg-muted",
+            )}
+            aria-label="Sin ícono"
+          >
+            —
+          </button>
+          {HABIT_ICONS.map((option) => (
+            <button
+              key={option}
+              type="button"
+              onClick={() => setIcon(option)}
+              className={cn(
+                "flex size-9 items-center justify-center rounded-lg border text-lg",
+                icon === option
+                  ? "border-ring bg-muted"
+                  : "border-transparent bg-muted/50 hover:bg-muted",
+              )}
+              aria-label={`Ícono ${option}`}
+            >
+              {option}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="flex flex-col gap-2">
+        <Label>Color</Label>
+        <input type="hidden" name="color" value={color} />
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={() => setColor("")}
+            className={cn(
+              "bg-muted flex size-8 items-center justify-center rounded-full border-2 text-xs",
+              color === "" ? "border-ring" : "border-transparent",
+            )}
+            aria-label="Sin color"
+          >
+            —
+          </button>
+          {HABIT_COLORS.map((option) => (
+            <button
+              key={option.id}
+              type="button"
+              onClick={() => setColor(option.id)}
+              className={cn(
+                "size-8 rounded-full border-2",
+                option.className,
+                color === option.id ? "border-ring" : "border-transparent",
+              )}
+              aria-label={option.label}
+              title={option.label}
+            />
+          ))}
+        </div>
       </div>
 
       <div className="flex flex-col gap-2">

@@ -3,7 +3,7 @@
 import { and, eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { db } from "@/db";
-import { annotations, habitEntries, habits } from "@/db/schema";
+import { annotations, habits } from "@/db/schema";
 import { getCurrentUser } from "@/lib/auth/current-user";
 
 export type AnnotationFormState = { error: string | null };
@@ -24,13 +24,6 @@ export async function setAnnotation(
     where: and(eq(habits.id, habitId), eq(habits.userId, user.id)),
   });
   if (!habit) return { error: "Hábito no encontrado." };
-
-  const entry = await db.query.habitEntries.findFirst({
-    where: and(eq(habitEntries.habitId, habitId), eq(habitEntries.date, date)),
-  });
-  if (entry?.completed) {
-    return { error: "Solo se pueden anotar días no cumplidos." };
-  }
 
   await db
     .insert(annotations)

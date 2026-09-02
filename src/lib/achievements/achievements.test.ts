@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { computeAchievements } from "./achievements";
+import {
+  computeAchievements,
+  levelFor,
+  pointsToNextLevel,
+  totalPoints,
+} from "./achievements";
 
 const ZERO_INPUT = {
   totalCompletedEntries: 0,
@@ -42,5 +47,40 @@ describe("computeAchievements", () => {
     expect(byId["explorer"]).toBe(true);
     expect(byId["social"]).toBe(true);
     expect(byId["streak-4"]).toBe(false);
+  });
+});
+
+describe("totalPoints", () => {
+  it("is zero when nothing is unlocked", () => {
+    expect(totalPoints(computeAchievements(ZERO_INPUT))).toBe(0);
+  });
+
+  it("sums only the unlocked achievements", () => {
+    const result = computeAchievements({
+      ...ZERO_INPUT,
+      totalCompletedEntries: 1, // first-step: 10
+      bestStreakEver: 8, // streak-4: 20, streak-8: 30
+    });
+    expect(totalPoints(result)).toBe(60);
+  });
+});
+
+describe("levelFor", () => {
+  it("starts at level 1 with zero points", () => {
+    expect(levelFor(0)).toBe(1);
+  });
+
+  it("levels up every 50 points", () => {
+    expect(levelFor(49)).toBe(1);
+    expect(levelFor(50)).toBe(2);
+    expect(levelFor(120)).toBe(3);
+  });
+});
+
+describe("pointsToNextLevel", () => {
+  it("counts down to the next threshold", () => {
+    expect(pointsToNextLevel(0)).toBe(50);
+    expect(pointsToNextLevel(40)).toBe(10);
+    expect(pointsToNextLevel(50)).toBe(50);
   });
 });
