@@ -1,6 +1,11 @@
 import { Award, Lock } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import type { Achievement } from "@/lib/achievements/achievements";
+import {
+  levelFor,
+  pointsToNextLevel,
+  totalPoints,
+  type Achievement,
+} from "@/lib/achievements/achievements";
 
 export function AchievementsWidget({
   achievements,
@@ -8,6 +13,9 @@ export function AchievementsWidget({
   achievements: Achievement[];
 }) {
   const unlockedCount = achievements.filter((a) => a.unlocked).length;
+  const points = totalPoints(achievements);
+  const level = levelFor(points);
+  const toNext = pointsToNextLevel(points);
 
   return (
     <Card>
@@ -20,7 +28,15 @@ export function AchievementsWidget({
           {unlockedCount}/{achievements.length}
         </span>
       </CardHeader>
-      <CardContent>
+      <CardContent className="flex flex-col gap-3">
+        <div className="bg-muted flex items-center justify-between rounded-lg px-3 py-2">
+          <span className="font-heading text-sm font-bold">
+            Nivel {level}
+          </span>
+          <span className="text-muted-foreground text-xs">
+            {points} pts · {toNext} para el próximo nivel
+          </span>
+        </div>
         <ul className="flex flex-col gap-2.5">
           {achievements.map((achievement) => (
             <li
