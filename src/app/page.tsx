@@ -8,9 +8,11 @@ import { getHabitStreak } from "@/lib/habits/get-habit-streak";
 import { getFreezeQuotaRemaining, getFrozenWeeksByHabit } from "@/lib/habits/get-freezes";
 import { getTeamStreak } from "@/lib/habits/get-team-streak";
 import { getAchievementsForUser } from "@/lib/achievements/get-achievements";
+import { getWhoopStatus } from "@/lib/whoop/get-whoop-status";
 import { PrimaryHeader } from "@/components/app-header";
 import { AchievementsWidget } from "@/components/dashboard/achievements-widget";
 import { TeamPulseWidget } from "@/components/dashboard/team-pulse-widget";
+import { WhoopWidget } from "@/components/dashboard/whoop-widget";
 import { ArchivedHabits } from "@/components/habits/archived-habits";
 import { HabitList } from "@/components/habits/habit-list";
 
@@ -147,6 +149,7 @@ export default async function Home() {
   }
 
   const achievements = await getAchievementsForUser(user.id);
+  const whoopStatus = await getWhoopStatus(user.id);
 
   return (
     <div className="flex min-h-screen flex-col items-center">
@@ -174,6 +177,7 @@ export default async function Home() {
             teamStreak={teamStreak}
           />
           <AchievementsWidget achievements={achievements} />
+          <WhoopWidget status={whoopStatus} />
         </aside>
       </div>
     </div>
