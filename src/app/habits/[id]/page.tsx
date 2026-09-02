@@ -11,6 +11,7 @@ import {
   HabitHeatmap,
   habitCompletionRate,
 } from "@/components/habits/habit-heatmap";
+import { StreakCelebration } from "@/components/habits/streak-celebration";
 import { StreakPills } from "@/components/habits/streak-pills";
 
 function typeLabel(habit: { type: string; target: number | null }) {
@@ -111,7 +112,9 @@ export default async function HabitDetailPage({
               {typeLabel(habit)} · {frequencyLabel(habit)}
             </p>
           </div>
-          <StreakPills current={streak.currentStreak} max={streak.maxStreak} />
+          <StreakCelebration habitId={habit.id} currentStreak={streak.currentStreak}>
+            <StreakPills current={streak.currentStreak} max={streak.maxStreak} />
+          </StreakCelebration>
         </div>
 
         <div className="grid grid-cols-1 gap-4 md:grid-cols-3">

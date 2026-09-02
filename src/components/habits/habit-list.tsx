@@ -1,3 +1,4 @@
+import { Sparkles } from "lucide-react";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -6,9 +7,11 @@ import { archiveHabit, createHabit, updateHabit } from "@/app/habits/actions";
 import type { habitEntries, habits } from "@/db/schema";
 import type { StreakResult } from "@/lib/habits/streak";
 import { getTodayProgressQuip } from "@/lib/habits/streak-flavor";
+import { EveningReminder } from "./evening-reminder";
 import { HabitCheckin } from "./habit-checkin";
 import { HabitDialog } from "./habit-dialog";
 import { HabitHeatmap } from "./habit-heatmap";
+import { StreakCelebration } from "./streak-celebration";
 import { StreakPills } from "./streak-pills";
 
 type Habit = typeof habits.$inferSelect;
@@ -52,18 +55,42 @@ function TodayProgress({ done, total }: { done: number; total: number }) {
   );
 }
 
+function NewReactionsBanner({
+  count,
+  habitNames,
+}: {
+  count: number;
+  habitNames: string[];
+}) {
+  if (count === 0) return null;
+
+  return (
+    <div className="bg-accent/20 ring-accent/40 flex items-center gap-2 rounded-xl px-4 py-3 text-sm ring-1">
+      <Sparkles className="text-accent-foreground size-4 shrink-0" />
+      <span>
+        Te dejaron {count} reacción{count === 1 ? "" : "es"} esta semana en{" "}
+        {habitNames.join(", ")}.
+      </span>
+    </div>
+  );
+}
+
 export function HabitList({
   habits: items,
   todayEntries,
   streaksByHabit,
   recentActivityByHabit,
   doneToday,
+  reactionCount,
+  reactedHabitNames,
 }: {
   habits: Habit[];
   todayEntries: Map<string, HabitEntry>;
   streaksByHabit: Map<string, StreakResult>;
   recentActivityByHabit: Map<string, RecentActivity>;
   doneToday: number;
+  reactionCount: number;
+  reactedHabitNames: string[];
 }) {
   return (
     <div className="flex w-full flex-col gap-4">
@@ -85,7 +112,14 @@ export function HabitList({
       </div>
 
       {items.length > 0 && (
-        <TodayProgress done={doneToday} total={items.length} />
+        <>
+          <TodayProgress done={doneToday} total={items.length} />
+          <NewReactionsBanner
+            count={reactionCount}
+            habitNames={reactedHabitNames}
+          />
+          <EveningReminder doneToday={doneToday} total={items.length} />
+        </>
       )}
 
       {items.length === 0 && (
@@ -157,7 +191,15 @@ export function HabitList({
                   <Badge variant="secondary">{frequencyLabel(habit)}</Badge>
                 </div>
 
-                <StreakPills current={streak.currentStreak} max={streak.maxStreak} />
+                <StreakCelebration
+                  habitId={habit.id}
+                  currentStreak={streak.currentStreak}
+                >
+                  <StreakPills
+                    current={streak.currentStreak}
+                    max={streak.maxStreak}
+                  />
+                </StreakCelebration>
 
                 <Link
                   href={`/habits/${habit.id}`}
