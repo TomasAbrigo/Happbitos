@@ -7,6 +7,7 @@ import { habits, reactions } from "@/db/schema";
 import { getCurrentUser } from "@/lib/auth/current-user";
 import { areFriends } from "@/lib/friends/get-friends";
 import { isValidSticker } from "@/lib/reactions/catalog";
+import { sendPushToUser } from "@/lib/push/send-push";
 
 export type ReactionFormState = { error: string | null };
 
@@ -37,7 +38,22 @@ export async function reactToHabit(
       set: { sticker },
     });
 
+  notifyHabitOwnerOfReaction(user, habit).catch(() => {});
+
   revalidatePath("/friend");
   revalidatePath(`/habits/${habitId}`);
   return { error: null };
+}
+
+async function notifyHabitOwnerOfReaction(
+  fromUser: { id: string; username: string },
+  habit: { userId: string; name: string },
+) {
+  if (habit.userId === fromUser.id) return;
+
+  await sendPushToUser(habit.userId, {
+    title: "Happbitos",
+    body: `${fromUser.username} te reaccionó en "${habit.name}" 🎉`,
+    url: "/friend",
+  });
 }
