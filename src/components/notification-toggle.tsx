@@ -33,6 +33,24 @@ function canAutoPrompt(): boolean {
   return !isIOS && !isMacSafari;
 }
 
+// TEMP: makes the otherwise-silent "unsupported" case visible so someone
+// whose bell never appears can screenshot *why* instead of us guessing
+// blind. Remove once the iPhone case that motivated this is solved.
+function getUnsupportedDiagnostics(): string {
+  const standalone =
+    "standalone" in navigator
+      ? String((navigator as { standalone?: boolean }).standalone)
+      : "n/a";
+  return [
+    `sw=${"serviceWorker" in navigator}`,
+    `push=${"PushManager" in window}`,
+    `notif=${"Notification" in window}`,
+    `standalone=${standalone}`,
+    `displayMode=${window.matchMedia?.("(display-mode: standalone)").matches}`,
+    `ua=${navigator.userAgent}`,
+  ].join(" · ");
+}
+
 export function NotificationToggle() {
   const [status, setStatus] = useState<Status>("loading");
   const [error, setError] = useState<string | null>(null);
@@ -133,7 +151,15 @@ export function NotificationToggle() {
     });
   }
 
-  if (status === "unsupported" || status === "loading") return null;
+  if (status === "loading") return null;
+
+  if (status === "unsupported") {
+    return (
+      <span className="text-muted-foreground max-w-[220px] text-[10px] leading-tight break-all">
+        🔕 {getUnsupportedDiagnostics()}
+      </span>
+    );
+  }
 
   return (
     <div className="flex items-center gap-1.5">
