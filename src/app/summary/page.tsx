@@ -1,7 +1,7 @@
 import { TrendingDown, TrendingUp } from "lucide-react";
 import { currentWeekStartIso } from "@/lib/date";
 import { getCurrentUser } from "@/lib/auth/current-user";
-import { getOtherUser } from "@/lib/auth/other-user";
+import { getFriends } from "@/lib/friends/get-friends";
 import { getWeeklySummaryForUser } from "@/lib/habits/get-weekly-summary";
 import { getTrendsForUser } from "@/lib/habits/get-trends";
 import type { MonthComparison, WeekdayTrend } from "@/lib/habits/trends";
@@ -171,11 +171,16 @@ export default async function SummaryPage() {
   const user = await getCurrentUser();
   if (!user) return null;
 
-  const friend = await getOtherUser(user.id);
+  const friends = await getFriends(user.id);
 
-  const [mySummary, friendSummary, trends] = await Promise.all([
+  const [mySummary, friendSummaries, trends] = await Promise.all([
     getWeeklySummaryForUser(user.id),
-    friend ? getWeeklySummaryForUser(friend.id) : Promise.resolve([]),
+    Promise.all(
+      friends.map(async (friend) => ({
+        friend,
+        items: await getWeeklySummaryForUser(friend.id),
+      })),
+    ),
     getTrendsForUser(user.id),
   ]);
 
@@ -200,13 +205,14 @@ export default async function SummaryPage() {
 
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <SummaryCard username={user.username} items={mySummary} tone="me" />
-          {friend && (
+          {friendSummaries.map(({ friend, items }) => (
             <SummaryCard
+              key={friend.id}
               username={friend.username}
-              items={friendSummary}
+              items={items}
               tone="friend"
             />
-          )}
+          ))}
         </div>
 
         <TrendsCard

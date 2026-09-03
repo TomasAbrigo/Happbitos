@@ -39,6 +39,14 @@ export function PrimaryHeader({ username }: { username: string }) {
           </Button>
           <Button
             size="sm"
+            variant="outline"
+            nativeButton={false}
+            render={<Link href="/friends" />}
+          >
+            Amigos
+          </Button>
+          <Button
+            size="sm"
             variant="accent"
             nativeButton={false}
             render={<Link href="/ideas" />}

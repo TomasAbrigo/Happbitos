@@ -5,7 +5,9 @@ import { revalidatePath } from "next/cache";
 import { db } from "@/db";
 import { habitEntries, habits } from "@/db/schema";
 import { getCurrentUser } from "@/lib/auth/current-user";
+import { getFriends } from "@/lib/friends/get-friends";
 import { isCompleted } from "@/lib/habits/completion";
+import { sendPushToUser } from "@/lib/push/send-push";
 
 export type EntryFormState = { error: string | null };
 
@@ -34,6 +36,11 @@ export async function logHabitEntry(
       ? checkedRaw === "on"
       : isCompleted({ type: habit.type, target: habit.target }, { quantity });
 
+  const existingEntry = await db.query.habitEntries.findFirst({
+    where: and(eq(habitEntries.habitId, habitId), eq(habitEntries.date, date)),
+    columns: { completed: true },
+  });
+
   await db
     .insert(habitEntries)
     .values({ habitId, date, completed, quantity })
@@ -42,6 +49,26 @@ export async function logHabitEntry(
       set: { completed, quantity },
     });
 
+  if (completed && !existingEntry?.completed) {
+    notifyPartnerOfCompletion(user, habit.name).catch(() => {});
+  }
+
   revalidatePath("/");
   return { error: null };
+}
+
+async function notifyPartnerOfCompletion(
+  user: { id: string; username: string },
+  habitName: string,
+) {
+  const friends = await getFriends(user.id);
+  await Promise.all(
+    friends.map((friend) =>
+      sendPushToUser(friend.id, {
+        title: "Happbitos",
+        body: `${user.username} marcó "${habitName}" ✅`,
+        url: `/friend?id=${user.id}`,
+      }),
+    ),
+  );
 }

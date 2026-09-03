@@ -2,7 +2,7 @@ import { eq, inArray, or } from "drizzle-orm";
 import { db } from "@/db";
 import { challengeCheckins, challenges } from "@/db/schema";
 import { getCurrentUser } from "@/lib/auth/current-user";
-import { getOtherUser } from "@/lib/auth/other-user";
+import { getFriends } from "@/lib/friends/get-friends";
 import { todayIso } from "@/lib/date";
 import { PrimaryHeader } from "@/components/app-header";
 import { ChallengeCard } from "@/components/challenges/challenge-card";
@@ -12,7 +12,7 @@ export default async function ChallengesPage() {
   const user = await getCurrentUser();
   if (!user) return null;
 
-  const friend = await getOtherUser(user.id);
+  const friends = await getFriends(user.id);
 
   const myChallenges = await db.query.challenges.findMany({
     where: or(
@@ -78,7 +78,7 @@ export default async function ChallengesPage() {
           </p>
         </div>
 
-        <ChallengeForm disabled={!friend} />
+        <ChallengeForm friends={friends} />
 
         {cards.length === 0 && (
           <p className="text-muted-foreground text-sm">

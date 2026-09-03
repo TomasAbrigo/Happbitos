@@ -5,7 +5,7 @@ import { revalidatePath } from "next/cache";
 import { db } from "@/db";
 import { challengeCheckins, challenges } from "@/db/schema";
 import { getCurrentUser } from "@/lib/auth/current-user";
-import { getOtherUser } from "@/lib/auth/other-user";
+import { areFriends } from "@/lib/friends/get-friends";
 import { addDaysIso, todayIso } from "@/lib/date";
 
 export type ChallengeFormState = { error: string | null };
@@ -31,15 +31,17 @@ export async function createChallenge(
       ? durationRaw
       : 30;
 
-  const friend = await getOtherUser(user.id);
-  if (!friend) return { error: "No hay con quién armar un desafío todavía." };
+  const friendId = String(formData.get("friendId") ?? "");
+  if (!friendId || !(await areFriends(user.id, friendId))) {
+    return { error: "Elegí con quién armar el desafío." };
+  }
 
   const startDate = todayIso();
   const endDate = addDaysIso(startDate, duration - 1);
 
   await db.insert(challenges).values({
     createdByUserId: user.id,
-    invitedUserId: friend.id,
+    invitedUserId: friendId,
     title,
     startDate,
     endDate,

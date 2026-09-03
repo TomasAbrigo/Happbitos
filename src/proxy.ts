@@ -22,13 +22,15 @@ export default async function proxy(request: NextRequest) {
     ? await verifySessionToken(token, process.env.AUTH_SECRET!)
     : null;
 
-  const isLoginRoute = request.nextUrl.pathname === "/login";
+  const isPublicAuthRoute =
+    request.nextUrl.pathname === "/login" ||
+    request.nextUrl.pathname === "/signup";
 
-  if (!session && !isLoginRoute) {
+  if (!session && !isPublicAuthRoute) {
     return NextResponse.redirect(new URL("/login", request.url));
   }
 
-  if (session && isLoginRoute) {
+  if (session && isPublicAuthRoute) {
     return NextResponse.redirect(new URL("/", request.url));
   }
 

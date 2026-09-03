@@ -153,6 +153,29 @@ export const challenges = pgTable("challenges", {
     .defaultNow(),
 });
 
+export const friendships = pgTable(
+  "friendships",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    requesterId: uuid("requester_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    addresseeId: uuid("addressee_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    status: text("status", {
+      enum: ["pending", "accepted", "declined"],
+    })
+      .notNull()
+      .default("pending"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    respondedAt: timestamp("responded_at", { withTimezone: true }),
+  },
+  (table) => [unique().on(table.requesterId, table.addresseeId)],
+);
+
 export const challengeCheckins = pgTable(
   "challenge_checkins",
   {

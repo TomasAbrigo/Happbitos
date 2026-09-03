@@ -5,22 +5,27 @@ import { db } from "@/db";
 import { habits, reactions } from "@/db/schema";
 import { currentWeekStartIso, toIsoDateInTz } from "@/lib/date";
 import { getCurrentUser } from "@/lib/auth/current-user";
-import { getOtherUser } from "@/lib/auth/other-user";
+import { getFriends } from "@/lib/friends/get-friends";
 import { getHabitStreak } from "@/lib/habits/get-habit-streak";
 import { getFrozenWeeksByHabit } from "@/lib/habits/get-freezes";
 import { habitColorClass } from "@/lib/habits/appearance";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DetailHeader } from "@/components/app-header";
 import { HabitHeatmap } from "@/components/habits/habit-heatmap";
 import { StreakPills } from "@/components/habits/streak-pills";
 import { ReactionPicker } from "@/components/reactions/reaction-picker";
 
-export default async function FriendPage() {
+export default async function FriendPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ id?: string }>;
+}) {
   const user = await getCurrentUser();
   if (!user) return null;
 
-  const friend = await getOtherUser(user.id);
-  if (!friend) {
+  const friends = await getFriends(user.id);
+  if (friends.length === 0) {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center gap-2 p-8">
         <p className="text-muted-foreground text-sm">
@@ -32,6 +37,9 @@ export default async function FriendPage() {
       </div>
     );
   }
+
+  const { id } = await searchParams;
+  const friend = friends.find((f) => f.id === id) ?? friends[0];
 
   const friendHabits = await db.query.habits.findMany({
     where: and(eq(habits.userId, friend.id), eq(habits.status, "active")),
@@ -97,6 +105,22 @@ export default async function FriendPage() {
             sticker sí.
           </p>
         </div>
+
+        {friends.length > 1 && (
+          <nav className="flex flex-wrap gap-2">
+            {friends.map((f) => (
+              <Button
+                key={f.id}
+                size="sm"
+                variant={f.id === friend.id ? "default" : "outline"}
+                nativeButton={false}
+                render={<Link href={`/friend?id=${f.id}`} />}
+              >
+                {f.username}
+              </Button>
+            ))}
+          </nav>
+        )}
 
         {friendHabits.length === 0 && (
           <p className="text-muted-foreground text-sm">

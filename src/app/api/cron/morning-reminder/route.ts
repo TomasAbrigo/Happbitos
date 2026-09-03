@@ -3,7 +3,6 @@ import { db } from "@/db";
 import { pushSubscriptions } from "@/db/schema";
 import { todayIso } from "@/lib/date";
 import { getMissingHabitsToday } from "@/lib/habits/get-missing-today";
-import { getStreaksAtRisk } from "@/lib/habits/get-streak-risk";
 import { sendPushToUser } from "@/lib/push/send-push";
 
 export async function GET(request: Request) {
@@ -24,16 +23,9 @@ export async function GET(request: Request) {
     const missingHabits = await getMissingHabitsToday(userId, today);
     if (missingHabits.length === 0) continue;
 
-    const missing = missingHabits.length;
-    const risks = await getStreaksAtRisk(missingHabits, today);
-    const body =
-      risks.length > 0
-        ? `Tenés una racha de ${risks[0].streak} días en "${risks[0].habitName}" que se corta si no marcás hoy. Quedan ${missing} hábito${missing === 1 ? "" : "s"} sin marcar.`
-        : `Te quedan ${missing} hábito${missing === 1 ? "" : "s"} sin marcar hoy. A tiempo estás.`;
-
     const result = await sendPushToUser(userId, {
       title: "Happbitos",
-      body,
+      body: `Buen día ☀️. Hoy tenés ${missingHabits.length} hábito${missingHabits.length === 1 ? "" : "s"} esperando.`,
       url: "/",
     });
     if (result.sent > 0) notified++;

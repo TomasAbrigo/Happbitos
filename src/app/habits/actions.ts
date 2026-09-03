@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { db } from "@/db";
 import { habitFreezes, habits } from "@/db/schema";
 import { getCurrentUser } from "@/lib/auth/current-user";
+import { getFriends } from "@/lib/friends/get-friends";
 import {
   type HabitFrequency,
   type HabitInput,
@@ -14,6 +15,7 @@ import {
   currentWeekStartIso,
   getFreezeQuotaRemaining,
 } from "@/lib/habits/get-freezes";
+import { sendPushToUser } from "@/lib/push/send-push";
 
 export type HabitFormState = { error: string | null };
 
@@ -178,7 +180,25 @@ export async function applyFreeze(
 
   await db.insert(habitFreezes).values({ habitId, weekStart });
 
+  notifyPartnerOfFreeze(user, habit.name).catch(() => {});
+
   revalidatePath("/");
   revalidatePath(`/habits/${habitId}`);
   return { error: null };
+}
+
+async function notifyPartnerOfFreeze(
+  user: { id: string; username: string },
+  habitName: string,
+) {
+  const friends = await getFriends(user.id);
+  await Promise.all(
+    friends.map((friend) =>
+      sendPushToUser(friend.id, {
+        title: "Happbitos",
+        body: `${user.username} usó un comodín en "${habitName}" esta semana ❄️`,
+        url: `/friend?id=${user.id}`,
+      }),
+    ),
+  );
 }

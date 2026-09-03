@@ -1,11 +1,11 @@
 "use server";
 
-import { and, eq } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { db } from "@/db";
 import { habits, reactions } from "@/db/schema";
 import { getCurrentUser } from "@/lib/auth/current-user";
-import { getOtherUser } from "@/lib/auth/other-user";
+import { areFriends } from "@/lib/friends/get-friends";
 import { isValidSticker } from "@/lib/reactions/catalog";
 
 export type ReactionFormState = { error: string | null };
@@ -22,14 +22,11 @@ export async function reactToHabit(
   const sticker = String(formData.get("sticker") ?? "");
   if (!isValidSticker(sticker)) return { error: "Sticker inválido." };
 
-  const friend = await getOtherUser(user.id);
-  if (!friend) return { error: "No hay otro usuario en la app." };
-
   const habit = await db.query.habits.findFirst({
-    where: and(eq(habits.id, habitId), eq(habits.userId, friend.id)),
+    where: eq(habits.id, habitId),
   });
-  if (!habit) {
-    return { error: "Solo podés reaccionar al progreso del otro usuario." };
+  if (!habit || !(await areFriends(user.id, habit.userId))) {
+    return { error: "Solo podés reaccionar al progreso de tus amigos." };
   }
 
   await db

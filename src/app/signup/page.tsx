@@ -6,12 +6,12 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { login, type LoginState } from "./actions";
+import { signup, type SignupState } from "./actions";
 
-const initialState: LoginState = { error: null };
+const initialState: SignupState = { error: null };
 
-export default function LoginPage() {
-  const [state, formAction, pending] = useActionState(login, initialState);
+export default function SignupPage() {
+  const [state, formAction, pending] = useActionState(signup, initialState);
 
   return (
     <div className="flex min-h-screen flex-col md:flex-row">
@@ -21,11 +21,11 @@ export default function LoginPage() {
         </span>
         <div className="flex max-w-md flex-col gap-4">
           <h1 className="font-heading text-5xl leading-tight font-bold">
-            Cero excusas, en equipo.
+            Sumate al equipo.
           </h1>
           <span className="bg-accent h-1.5 w-28 rounded-full" />
           <p className="text-primary-foreground/70 text-[17px]">
-            Entrá y marcá lo que hiciste. Tus amigos están mirando, y vos también.
+            Creá tu cuenta y después elegí con quién compartir tus hábitos.
           </p>
         </div>
         <p className="text-primary-foreground/50 text-xs">
@@ -44,13 +44,13 @@ export default function LoginPage() {
             </div>
           </div>
           <p className="text-muted-foreground mb-6 text-sm md:hidden">
-            Cero excusas, en equipo. Entrá y marcá lo que hiciste.
+            Creá tu cuenta y elegí con quién compartir tus hábitos.
           </p>
 
           <div className="mb-6 hidden md:block">
-            <h1 className="font-heading text-3xl font-extrabold">Entrá</h1>
+            <h1 className="font-heading text-3xl font-extrabold">Registrate</h1>
             <p className="text-muted-foreground mt-1 text-sm">
-              Usuario y contraseña. Tus amigos ya te están mirando.
+              Elegí un usuario y contraseña. Nada más.
             </p>
           </div>
 
@@ -71,14 +71,14 @@ export default function LoginPage() {
               disabled={pending}
               className="h-11 w-full text-base"
             >
-              {pending ? "Entrando..." : "Entrar"}
+              {pending ? "Creando..." : "Crear cuenta"}
             </Button>
           </form>
 
           <p className="text-muted-foreground mt-4 text-center text-xs">
-            ¿No tenés cuenta?{" "}
-            <Link href="/signup" className="underline">
-              Registrate
+            ¿Ya tenés cuenta?{" "}
+            <Link href="/login" className="underline">
+              Entrá
             </Link>
           </p>
         </div>

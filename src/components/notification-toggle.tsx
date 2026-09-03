@@ -18,6 +18,8 @@ function urlBase64ToUint8Array(base64String: string): Uint8Array {
 
 type Status = "unsupported" | "loading" | "off" | "on";
 
+const AUTO_PROMPT_KEY = "happbitos-push-auto-prompted";
+
 export function NotificationToggle() {
   const [status, setStatus] = useState<Status>("loading");
   const [pending, startTransition] = useTransition();
@@ -30,6 +32,14 @@ export function NotificationToggle() {
       }
       isSubscribedToPush().then((subscribed) => {
         setStatus(subscribed ? "on" : "off");
+        if (
+          !subscribed &&
+          Notification.permission === "default" &&
+          !sessionStorage.getItem(AUTO_PROMPT_KEY)
+        ) {
+          sessionStorage.setItem(AUTO_PROMPT_KEY, "1");
+          enable();
+        }
       });
     }, 0);
     return () => clearTimeout(timeout);

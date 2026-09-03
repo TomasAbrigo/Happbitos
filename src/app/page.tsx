@@ -3,10 +3,11 @@ import { db } from "@/db";
 import { habitEntries, habits, reactions } from "@/db/schema";
 import { addDaysIso, currentWeekStartIso, todayIso } from "@/lib/date";
 import { getCurrentUser } from "@/lib/auth/current-user";
-import { getOtherUser } from "@/lib/auth/other-user";
+import { getFriends } from "@/lib/friends/get-friends";
 import { getHabitStreak } from "@/lib/habits/get-habit-streak";
 import { getFreezeQuotaRemaining, getFrozenWeeksByHabit } from "@/lib/habits/get-freezes";
 import { getTeamStreak } from "@/lib/habits/get-team-streak";
+import type { PulseSide } from "@/lib/habits/team-pulse";
 import { getAchievementsForUser } from "@/lib/achievements/get-achievements";
 import { getWhoopStatus } from "@/lib/whoop/get-whoop-status";
 import { PrimaryHeader } from "@/components/app-header";
@@ -123,30 +124,31 @@ export default async function Home() {
     ),
   ];
 
-  const friend = await getOtherUser(user.id);
-  let friendPulse = null;
-  let teamStreak = undefined;
-  if (friend) {
-    teamStreak = await getTeamStreak(user.id, friend.id);
-    const friendActiveHabits = await db.query.habits.findMany({
-      where: and(eq(habits.userId, friend.id), eq(habits.status, "active")),
-    });
-    const friendHabitIds = friendActiveHabits.map((h) => h.id);
-    const friendDoneToday = friendHabitIds.length
-      ? await db.query.habitEntries.findMany({
-          where: and(
-            inArray(habitEntries.habitId, friendHabitIds),
-            eq(habitEntries.date, today),
-            eq(habitEntries.completed, true),
-          ),
-        })
-      : [];
-    friendPulse = {
-      username: friend.username,
-      done: friendDoneToday.length,
-      total: friendActiveHabits.length,
-    };
-  }
+  const friends = await getFriends(user.id);
+  const friendPulses = await Promise.all(
+    friends.map(async (friend) => {
+      const teamStreak = await getTeamStreak(user.id, friend.id);
+      const friendActiveHabits = await db.query.habits.findMany({
+        where: and(eq(habits.userId, friend.id), eq(habits.status, "active")),
+      });
+      const friendHabitIds = friendActiveHabits.map((h) => h.id);
+      const friendDoneToday = friendHabitIds.length
+        ? await db.query.habitEntries.findMany({
+            where: and(
+              inArray(habitEntries.habitId, friendHabitIds),
+              eq(habitEntries.date, today),
+              eq(habitEntries.completed, true),
+            ),
+          })
+        : [];
+      const pulse: PulseSide = {
+        username: friend.username,
+        done: friendDoneToday.length,
+        total: friendActiveHabits.length,
+      };
+      return { friendId: friend.id, pulse, teamStreak };
+    }),
+  );
 
   const achievements = await getAchievementsForUser(user.id);
   const whoopStatus = await getWhoopStatus(user.id);
@@ -171,11 +173,22 @@ export default async function Home() {
         </div>
 
         <aside className="flex flex-col gap-4">
-          <TeamPulseWidget
-            me={{ username: user.username, done: doneToday, total: activeHabits.length }}
-            friend={friendPulse}
-            teamStreak={teamStreak}
-          />
+          {friendPulses.length === 0 ? (
+            <TeamPulseWidget
+              me={{ username: user.username, done: doneToday, total: activeHabits.length }}
+              friend={null}
+              teamStreak={undefined}
+            />
+          ) : (
+            friendPulses.map(({ friendId, pulse, teamStreak }) => (
+              <TeamPulseWidget
+                key={friendId}
+                me={{ username: user.username, done: doneToday, total: activeHabits.length }}
+                friend={pulse}
+                teamStreak={teamStreak}
+              />
+            ))
+          )}
           <AchievementsWidget achievements={achievements} />
           <WhoopWidget status={whoopStatus} />
         </aside>

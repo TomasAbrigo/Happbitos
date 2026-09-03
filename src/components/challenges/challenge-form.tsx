@@ -4,12 +4,13 @@ import { useActionState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { createChallenge, type ChallengeFormState } from "@/app/challenges/actions";
+import type { Friend } from "@/lib/friends/get-friends";
 
 const initialState: ChallengeFormState = { error: null };
 
 const DURATIONS = [7, 14, 21, 30, 60, 90];
 
-export function ChallengeForm({ disabled }: { disabled: boolean }) {
+export function ChallengeForm({ friends }: { friends: Friend[] }) {
   const [state, formAction, pending] = useActionState(
     createChallenge,
     initialState,
@@ -24,7 +25,7 @@ export function ChallengeForm({ disabled }: { disabled: boolean }) {
     wasPending.current = pending;
   }, [pending, state.error]);
 
-  if (disabled) {
+  if (friends.length === 0) {
     return (
       <p className="text-muted-foreground text-sm">
         Necesitás que el otro usuario esté activo para armar un desafío.
@@ -38,6 +39,27 @@ export function ChallengeForm({ disabled }: { disabled: boolean }) {
       action={formAction}
       className="bg-card ring-foreground/10 flex flex-wrap items-end gap-2 rounded-xl p-3 ring-1"
     >
+      {friends.length === 1 ? (
+        <input type="hidden" name="friendId" value={friends[0].id} />
+      ) : (
+        <div className="flex flex-col gap-1.5">
+          <label htmlFor="friendId" className="text-muted-foreground text-xs font-medium">
+            Con quién
+          </label>
+          <select
+            id="friendId"
+            name="friendId"
+            defaultValue={friends[0].id}
+            className="h-9 rounded-lg border border-transparent bg-muted px-3 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+          >
+            {friends.map((f) => (
+              <option key={f.id} value={f.id}>
+                {f.username}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
       <div className="flex min-w-48 flex-1 flex-col gap-1.5">
         <label htmlFor="title" className="text-muted-foreground text-xs font-medium">
           Nuevo desafío
