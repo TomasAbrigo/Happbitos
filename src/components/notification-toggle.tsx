@@ -20,8 +20,22 @@ type Status = "unsupported" | "loading" | "off" | "on";
 
 const AUTO_PROMPT_KEY = "happbitos-push-auto-prompted";
 
+// Safari/WebKit only honors Notification.requestPermission() as a direct
+// result of a user gesture (tap on the bell). Firing it automatically there
+// either does nothing or, worse, can leave permission stuck at "denied"
+// without the user having made a real choice. Every iOS/iPadOS browser runs
+// on WebKit (Apple mandates it), so this covers Chrome/Firefox on iOS too.
+function canAutoPrompt(): boolean {
+  const ua = navigator.userAgent;
+  const isIOS = /iPad|iPhone|iPod/.test(ua);
+  const isMacSafari =
+    /Macintosh/.test(ua) && /Safari/.test(ua) && !/Chrome|Chromium|Edg|OPR/.test(ua);
+  return !isIOS && !isMacSafari;
+}
+
 export function NotificationToggle() {
   const [status, setStatus] = useState<Status>("loading");
+  const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
   useEffect(() => {
@@ -35,6 +49,7 @@ export function NotificationToggle() {
         if (
           !subscribed &&
           Notification.permission === "default" &&
+          canAutoPrompt() &&
           !sessionStorage.getItem(AUTO_PROMPT_KEY)
         ) {
           sessionStorage.setItem(AUTO_PROMPT_KEY, "1");
@@ -46,10 +61,14 @@ export function NotificationToggle() {
   }, []);
 
   function enable() {
+    setError(null);
     startTransition(async () => {
       try {
         if (Notification.permission === "denied") {
           setStatus("off");
+          setError(
+            "Bloqueaste las notificaciones antes. Tenés que habilitarlas desde los ajustes del navegador/sistema.",
+          );
           return;
         }
         const permission =
@@ -65,6 +84,7 @@ export function NotificationToggle() {
         const publicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
         if (!publicKey) {
           setStatus("off");
+          setError("Falta configuración del servidor.");
           return;
         }
         const subscription = await registration.pushManager.subscribe({
@@ -73,13 +93,19 @@ export function NotificationToggle() {
         });
 
         const json = subscription.toJSON();
-        await subscribeToPush({
+        const result = await subscribeToPush({
           endpoint: json.endpoint!,
           keys: { p256dh: json.keys!.p256dh, auth: json.keys!.auth },
         });
+        if (result.error) {
+          setStatus("off");
+          setError(result.error);
+          return;
+        }
         setStatus("on");
-      } catch {
+      } catch (err) {
         setStatus("off");
+        setError(err instanceof Error ? err.message : "No se pudo activar.");
       }
     });
   }
@@ -103,16 +129,19 @@ export function NotificationToggle() {
   if (status === "unsupported" || status === "loading") return null;
 
   return (
-    <Button
-      type="button"
-      size="icon-sm"
-      variant="ghost"
-      onClick={status === "on" ? disable : enable}
-      disabled={pending}
-      aria-label={status === "on" ? "Desactivar notificaciones" : "Activar notificaciones"}
-      title={status === "on" ? "Notificaciones activadas" : "Activar notificaciones"}
-    >
-      {status === "on" ? <Bell className="size-4" /> : <BellOff className="size-4" />}
-    </Button>
+    <div className="flex items-center gap-1.5">
+      <Button
+        type="button"
+        size="icon-sm"
+        variant="ghost"
+        onClick={status === "on" ? disable : enable}
+        disabled={pending}
+        aria-label={status === "on" ? "Desactivar notificaciones" : "Activar notificaciones"}
+        title={error ?? (status === "on" ? "Notificaciones activadas" : "Activar notificaciones")}
+      >
+        {status === "on" ? <Bell className="size-4" /> : <BellOff className="size-4" />}
+      </Button>
+      {error && <span className="text-destructive text-xs">{error}</span>}
+    </div>
   );
 }
