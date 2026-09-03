@@ -44,18 +44,25 @@ export function NotificationToggle() {
         setStatus("unsupported");
         return;
       }
-      isSubscribedToPush().then((subscribed) => {
-        setStatus(subscribed ? "on" : "off");
-        if (
-          !subscribed &&
-          Notification.permission === "default" &&
-          canAutoPrompt() &&
-          !sessionStorage.getItem(AUTO_PROMPT_KEY)
-        ) {
-          sessionStorage.setItem(AUTO_PROMPT_KEY, "1");
-          enable();
-        }
-      });
+      isSubscribedToPush()
+        .then((subscribed) => {
+          setStatus(subscribed ? "on" : "off");
+          if (
+            !subscribed &&
+            Notification.permission === "default" &&
+            canAutoPrompt() &&
+            !sessionStorage.getItem(AUTO_PROMPT_KEY)
+          ) {
+            sessionStorage.setItem(AUTO_PROMPT_KEY, "1");
+            enable();
+          }
+        })
+        .catch(() => {
+          // A stale bundle after a redeploy (old Server Action id) or a
+          // flaky network call must not leave the icon stuck invisible
+          // forever in "loading" — fall back to showing it as off.
+          setStatus("off");
+        });
     }, 0);
     return () => clearTimeout(timeout);
   }, []);
