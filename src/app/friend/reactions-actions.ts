@@ -38,7 +38,7 @@ export async function reactToHabit(
       set: { sticker },
     });
 
-  notifyHabitOwnerOfReaction(user, habit).catch(() => {});
+  notifyHabitOwnerOfReaction(user, habit, sticker).catch(() => {});
 
   revalidatePath("/friend");
   revalidatePath(`/habits/${habitId}`);
@@ -48,12 +48,13 @@ export async function reactToHabit(
 async function notifyHabitOwnerOfReaction(
   fromUser: { id: string; username: string },
   habit: { userId: string; name: string },
+  sticker: string,
 ) {
   if (habit.userId === fromUser.id) return;
 
   await sendPushToUser(habit.userId, {
     title: "Happbitos",
-    body: `${fromUser.username} te reaccionó en "${habit.name}" 🎉`,
+    body: `${fromUser.username} te puso "${sticker}" en "${habit.name}" 🎉`,
     url: "/friend",
   });
 }
